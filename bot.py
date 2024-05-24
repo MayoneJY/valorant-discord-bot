@@ -27,6 +27,12 @@ BOT_PREFIX = '-'
 
 # todo claer white space
 
+if len(sys.argv) != 3:
+    print("Usage: python bot.py <DISCORD_VALORANT_BOT_TOKEN> <OWNER_ID>")
+    sys.exit(1)
+
+DISCORD_VALORANT_BOT_TOKEN = sys.argv[1]
+OWNER_ID = sys.argv[2]
 
 class ValorantBot(commands.Bot):
     debug: bool
@@ -62,7 +68,7 @@ class ValorantBot(commands.Bot):
             self.session = aiohttp.ClientSession()
 
         try:
-            self.owner_id = int(os.getenv('OWNER_ID'))  # type: ignore
+            self.owner_id = int(OWNER_ID)  # type: ignore
         except ValueError:
             self.bot_app_info = await self.application_info()
             self.owner_id = self.bot_app_info.owner.id
@@ -99,7 +105,7 @@ class ValorantBot(commands.Bot):
     async def start(self, debug: bool = False) -> None:
         self.debug = debug
         # return await super().start(os.getenv('TOKEN'), reconnect=True)  # type: ignore
-        return await super().start(os.getenv('TOKEN'))  # type: ignore
+        return await super().start(DISCORD_VALORANT_BOT_TOKEN)  # type: ignore
 
 
 def run_bot() -> None:
