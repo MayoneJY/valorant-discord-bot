@@ -3,7 +3,8 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Literal
 
-from discord import Interaction, app_commands, ui
+import discord
+from discord import Interaction, app_commands, ui, User
 from discord.ext import commands, tasks
 from discord.utils import MISSING
 
@@ -16,12 +17,19 @@ from utils.valorant.embed import Embed, GetEmbed
 from utils.valorant.endpoint import API_ENDPOINT
 from utils.valorant.local import ResponseLanguage
 from utils.valorant.resources import setup_emoji
+from utils.valorant.party import CustomParty
+import json
 
 VLR_locale = ValorantTranslator()
 
 if TYPE_CHECKING:
     from bot import ValorantBot
 
+rank_list = ['언랭', '미사용', '미사용', '아1', '아2', '아3', '브1', '브2', '브3', '실1', '실2', '실3', '골1', '골2', '골3', '플1', '플2', '플3', '다1', '다2', '다3', '초1', '초2', '초3', '불1', '불2', '불3', '레디']
+
+    
+
+    
 
 class ValorantCog(commands.Cog, name='Valorant'):
     """Valorant API Commands"""
@@ -31,6 +39,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         self.endpoint: API_ENDPOINT = MISSING
         self.db: DATABASE = MISSING
         self.reload_cache.start()
+        self.party = {}
 
     def cog_unload(self) -> None:
         self.reload_cache.cancel()
@@ -151,7 +160,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         # data
         data = endpoint.store_fetch_storefront()
         embeds = GetEmbed.store(endpoint.player, data, response, self.bot)
-        await interaction.followup.send(embeds=embeds, view=View.share_button(interaction, embeds))
+        await interaction.followup.send(embeds=embeds)
 
     @app_commands.command(description='View your remaining Valorant and Riot Points (VP/RP)')
     @app_commands.guild_only()
@@ -177,6 +186,74 @@ class ValorantCog(commands.Cog, name='Valorant'):
         embed = GetEmbed.point(endpoint.player, data, response, self.bot)
 
         await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
+
+    @app_commands.command(description='View your player profile')
+    @app_commands.guild_only()
+    async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
+        # # check if user is logged in
+
+        self.party[interaction.channel] = {}
+
+        existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+        existing_role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+        if existing_role:
+            await existing_role.delete()
+            
+        if existing_role2:
+            await existing_role2.delete()
+
+        await interaction.guild.create_role(name="VAL_1") # type: ignore
+        await interaction.guild.create_role(name="VAL_2") # type: ignore
+        await interaction.response.defer(ephemeral=True)
+        self.party[interaction.channel] = CustomParty(self, interaction, self.bot)
+        await self.party[interaction.channel].initialize()
+
+    @app_commands.command(description='내전에 참여합니다.')
+    @app_commands.describe(tier="티어를 입력하세요.(예: '플3', '언랭', '레디')")
+    async def party_join(self, interaction: Interaction[ValorantBot], tier: str) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        if interaction.channel not in self.party:
+            await interaction.followup.send('파티가 생성되지 않았습니다.', ephemeral=True)
+            return
+
+        user = interaction.user
+        player_id = str(user.global_name)
+        rank = rank_list.index(tier)
+        emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
+        if rank == -1:
+            return
+        if await self.party[interaction.channel].add_player(player_id, {"rank": rank, "user": user, "val_id": "test_val_id", "emoji": emoji}):
+            await interaction.followup.send('Joined the party!', ephemeral=True)
+        else:
+            await interaction.followup.send('Failed to join the party.', ephemeral=True)
+
+    async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
+        
+        # check if user is logged in
+
+        await interaction.response.defer()
+
+        # response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+
+        if not interaction.guild:
+            raise ValorantBotError('This command can only be used in a server')
+
+        # setup emoji
+        await setup_emoji(self.bot, interaction.guild, interaction.locale)  # type: ignore
+
+        # get endpoint
+        try:
+            endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
+        except Exception as e:
+            await interaction.followup.send(embed=Embed(str(e)), ephemeral=True)
+            return -1
+
+        # data
+        data = endpoint.get_player_tier_rank() # dict[str, Any]
+
+        return int(data)
+
 
     @app_commands.command(description='View your daily/weekly mission progress')
     # @dynamic_cooldown(cooldown_5s)

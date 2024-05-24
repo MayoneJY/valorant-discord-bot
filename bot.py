@@ -21,6 +21,7 @@ initial_extensions = ['cogs.admin', 'cogs.errors', 'cogs.notify', 'cogs.valorant
 # intents required
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
 BOT_PREFIX = '-'
 
@@ -97,7 +98,8 @@ class ValorantBot(commands.Bot):
 
     async def start(self, debug: bool = False) -> None:
         self.debug = debug
-        return await super().start(os.getenv('TOKEN'), reconnect=True)  # type: ignore
+        # return await super().start(os.getenv('TOKEN'), reconnect=True)  # type: ignore
+        return await super().start(os.getenv('TOKEN'))  # type: ignore
 
 
 def run_bot() -> None:

@@ -4,7 +4,10 @@ import contextlib
 import json
 import os
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
+import pytz
+
+UTC = pytz.UTC
 from typing import TYPE_CHECKING, Any
 
 import discord

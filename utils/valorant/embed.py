@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import discord
+from discord import User
 
 from ..locale_v2 import ValorantTranslator
 from .useful import JSON, GetEmoji, GetFormat, calculate_level_xp, format_relative, iso_to_time
@@ -264,3 +265,20 @@ class GetEmbed:
         [embeds.append(cls.__giorgio_embed(data[skin], bot)) for skin in data]  # type: ignore
 
         return embeds  # type: ignore
+
+    # ---------- PARTY EMBED ---------- #
+
+    @staticmethod
+    def party_list(players: dict[str, dict[str, int|User]]|None = None) -> discord.Embed:
+        """Embed Party List"""
+
+        embed = Embed(title=f'파티 참여자 목록 ({len(players) if players else 0})')
+        if players is None:
+            embed.description = '참여자가 없습니다.'
+            return embed
+        embed.description = ''
+        for player, data in players.items():
+            
+            embed.description = f'{embed.description}\n{player} - {data["emoji"]}'
+
+        return embed

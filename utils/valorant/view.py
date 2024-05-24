@@ -10,8 +10,9 @@ from discord import ButtonStyle, Interaction, TextStyle, ui
 
 from ..errors import ValorantBotError
 from ..locale_v2 import ValorantTranslator
-from .resources import get_item_type
-
+from .resources import get_item_type, emoji_icon_assests
+from .party import CustomParty
+from .useful import GetEmoji
 # Local
 from .useful import JSON, GetEmoji, GetItems, format_relative
 
@@ -22,6 +23,184 @@ if TYPE_CHECKING:
 
     from .db import DATABASE
 
+
+class CustomPartyJoinButtons(ui.View):
+    def __init__(self, custom_party: CustomParty, valorantCog, bot: ValorantBot) -> None: # type: ignore
+        super().__init__(timeout=None)
+        self.custom_party = custom_party
+        self.valorantCog = valorantCog
+        self.bot = bot
+
+    @ui.button(label='참여', style=ButtonStyle.green)
+    async def join(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
+        user = interaction.user
+        player_id = str(user.global_name)
+        rank = await self.valorantCog.get_tier_rank(interaction)
+        emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
+        if rank == -1:
+            return
+        if await self.custom_party.add_player(player_id, {"rank": rank, "user": user, "val_id": "test_val_id", "emoji": emoji}):
+            await interaction.followup.send('Joined the party!', ephemeral=True)
+        else:
+            await interaction.followup.send('Failed to join the party.', ephemeral=True)
+
+    @ui.button(label='퇴장', style=ButtonStyle.red)
+    async def leave(self, interaction: Interaction, button: ui.Button) -> None:
+        await interaction.response.send_message('Left the party!')
+
+class CustomPartyStartButtons(ui.View):
+    def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot) -> None:
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.custom_party = custom_party
+        self.selected_channels = []
+
+        options = [
+            discord.SelectOption(label=channel.name, value=str(channel.id)) for channel in interaction.guild.voice_channels # type: ignore
+            ]
+        self.select = ui.Select(placeholder='음성 채널 선택 (2개):', min_values=2, max_values=2, options=options)
+        self.select.callback = self.select_callback
+        self.add_item(self.select)
+        
+        self.move_button = ui.Button(label="음성 채널 이동", style=discord.ButtonStyle.success, disabled=True)
+        self.move_button.callback = self.move_users
+        self.add_item(self.move_button)
+
+    @ui.button(label='시작', style=ButtonStyle.green)
+    async def start(self, interaction: Interaction, button: ui.Button) -> None:
+        try:
+            await interaction.response.defer()
+            def find_best_split(current_index, current_team1, current_team2, current_score1, current_score2): # type: ignore
+                global best_difference, best_team1, best_team2
+                
+                # 모든 플레이어를 처리했을 때
+                if current_index == len(player_scores):
+                    if abs(len(current_team1) - len(current_team2)) <= 1:  # 각 팀의 크기 차이가 1 이하일 때
+                        # 현재 점수 차이가 최소인지 확인
+                        if abs(current_score1 - current_score2) < best_difference:
+                            best_difference = abs(current_score1 - current_score2)
+                            best_team1 = current_team1[:]
+                            best_team2 = current_team2[:]
+                    return
+
+                # 현재 플레이어
+                player, score = player_scores[current_index]
+
+                # 팀 1에 플레이어 추가
+                if len(current_team1) < (len(player_scores) + 1) // 2:
+                    find_best_split(current_index + 1, current_team1 + [player], current_team2, current_score1 + score, current_score2)
+
+                # 팀 2에 플레이어 추가
+                if len(current_team2) < (len(player_scores)) // 2:
+                    find_best_split(current_index + 1, current_team1, current_team2 + [player], current_score1, current_score2 + score)
+
+            global player
+
+            global best_difference, best_team1, best_team2
+            best_difference = float('inf')
+            best_team1 = []
+            best_team2 = []
+            # 플레이어의 랭크를 점수로 변환
+            player_scores = [(name, data['rank']) for name, data in self.custom_party.players.items()]
+            
+            # 백트래킹 시작
+            find_best_split(0, [], [], 0, 0)
+
+            self.custom_party.best_team1 = best_team1
+            self.custom_party.best_team2 = best_team2
+
+            role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+            role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+
+            if len(best_team1) != 0:
+                # 1팀 평균 랭크
+                avg_rank1 = int(sum([self.custom_party.players[member]["rank"] for member in best_team1]) / len(best_team1))
+            else:
+                avg_rank1 = 0
+
+            if len(best_team2) != 0:
+                # 2팀 평균 랭크
+                avg_rank2 = int(sum([self.custom_party.players[member]["rank"] for member in best_team2]) / len(best_team2))
+            else:
+                avg_rank2 = 0
+            print(avg_rank1, avg_rank2)
+
+            modifed_best_team1 = []
+            for member in best_team1:
+                await self.custom_party.players[member]["user"].add_roles(role1)
+                modifed_best_team1.append(f"{member} - {self.custom_party.players[member]['emoji']}")
+
+            modifed_best_team2 = []
+            for member in best_team2:
+                await self.custom_party.players[member]["user"].add_roles(role2)
+                modifed_best_team2.append(f"{member} - {self.custom_party.players[member]['emoji']}")
+
+            embeds = []
+            embeds.append(discord.Embed(title="내전 팀 분배", description="팀 분배가 완료되었습니다.", color=0x00ff00))
+
+            embeds.append(discord.Embed(title=f"팀 1", color=0xff0000))
+            embeds[1].set_thumbnail(url=emoji_icon_assests[f"competitivetiers{avg_rank1}"])
+            embeds[1].add_field(name="", value="\n".join(modifed_best_team1), inline=False)
+
+            embeds.append(discord.Embed(title=f"팀 2", color=0x0000ff))
+            embeds[2].set_thumbnail(url=emoji_icon_assests[f"competitivetiers{avg_rank2}"])
+            embeds[2].add_field(name="", value="\n".join(modifed_best_team2), inline=False)
+
+            await interaction.followup.send(embeds=embeds)
+        except Exception as e:
+            print(f"CustomPartyStartButtons.start:{e}")
+
+    @ui.button(label='취소', style=ButtonStyle.red)
+    async def cancel(self, interaction: Interaction, button: ui.Button) -> None:
+        await interaction.response.send_message('Party canceled!')
+
+    async def select_callback(self, interaction: Interaction[ValorantBot]):
+        self.selected_channels = [interaction.guild.get_channel(int(channel_id)) for channel_id in self.select.values] # type: ignore
+        if len(self.selected_channels) == 2:
+            self.move_button.disabled = False
+            self.remove_item(self.select)  # 드롭다운 삭제
+        else:
+            self.move_button.disabled = True
+        await interaction.response.edit_message(view=self)
+
+        
+    async def move_users(self, interaction: Interaction[ValorantBot]):
+        await interaction.response.defer()
+        try:
+            role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+            role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+            await interaction.guild.chunk() # type: ignore
+            role_members1 = [member for member in interaction.guild.members if role1 in member.roles] # type: ignore
+            role_members2 = [member for member in interaction.guild.members if role2 in member.roles] # type: ignore
+            for member in role_members1:
+                # 음성채널 이동
+                if member.voice:
+                    await member.move_to(self.selected_channels[0]) # type: ignore
+
+            for member in role_members2:
+                # 음성채널 이동
+                if member.voice:
+                    await member.move_to(self.selected_channels[1]) # type: ignore
+
+            await interaction.followup.send('음성 채널 이동 완료!')
+        except Exception as e:
+            print(e)
+            await interaction.followup.send('음성 채널 이동 실패!')
+
+    @ui.button(label='원래 통화방으로', style=ButtonStyle.red)
+    async def re_change(self, interaction: Interaction, button: ui.Button) -> None:
+        await interaction.response.defer()
+        try:
+            for member in self.custom_party.best_team2:
+                user = self.custom_party.players[member]['user']
+                # 음성채널 이동
+                await user.move_to(self.selected_channels[0])
+            
+            await interaction.followup.send('음성 채널 이동 완료!')
+        except Exception as e:
+            print(e)
+            await interaction.followup.send('음성 채널 이동 실패!')
+        
 
 class share_button(ui.View):
     def __init__(self, interaction: Interaction, embeds: list[discord.Embed]) -> None:
