@@ -201,8 +201,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 if existing_role:
                     await existing_role.delete()
             except Exception as e:
-                
-                return
+                raise ValorantBotError('역할 관리 권한이 없는 거 같아요.. \n역할 관리 권한을 부여해주세요! :sob:')
             if existing_role2:
                 await existing_role2.delete()
 
