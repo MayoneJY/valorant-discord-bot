@@ -124,7 +124,7 @@ class CustomPartyStartButtons(ui.View):
             # 플레이어의 랭크를 점수로 변환
             player_scores = [(name, data['rank']) for name, data in self.custom_party.players.items()]
             
-            await msg.edit(content=f'팀 분배 완료..! `{count}`번의 경우의 수를 확인.\n역할을 분배합니다..') # type: ignore
+            await msg.edit(content=f'역할을 분배합니다..') # type: ignore
             # 백트래킹 시작
             find_best_split(0, [], [], 0, 0)
 
@@ -158,7 +158,7 @@ class CustomPartyStartButtons(ui.View):
                 modifed_best_team2.append(f"{member} - {self.custom_party.players[member]['emoji']}")
             await msg.delete() # type: ignore
             embeds = []
-            embeds.append(discord.Embed(title="내전 팀 분배", description="팀 분배가 완료되었습니다.", color=0x00ff00))
+            embeds.append(discord.Embed(title="내전 팀 분배", description="팀 분배가 완료되었습니다.\n`{count}`번의 경우의 수로 밸런스를 맞췄습니다.", color=0x00ff00))
 
             embeds.append(discord.Embed(title=f"팀 1", color=0xff0000))
             embeds[1].set_thumbnail(url=emoji_icon_assests[f"competitivetiers{avg_rank1}"])
