@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 class CustomPartyJoinButtons(ui.View):
     def __init__(self, interaction:Interaction[ValorantBot], custom_party: CustomParty, valorantCog, bot: ValorantBot) -> None: # type: ignore
-        super().__init__(timeout=10)
+        super().__init__(timeout=600)
         self.custom_party = custom_party
         self.valorantCog = valorantCog
         self.bot = bot
@@ -55,10 +55,13 @@ class CustomPartyJoinButtons(ui.View):
 
 class CustomPartyStartButtons(ui.View):
     def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot) -> None:
-        super().__init__(timeout=10)
+        super().__init__(timeout=600)
         self.bot = bot
         self.custom_party = custom_party
         self.selected_channels = []
+        
+        self.is_started = False
+        self.is_voice_channel_set = False
 
         options = [
             discord.SelectOption(label=channel.name, value=str(channel.id)) for channel in interaction.guild.voice_channels # type: ignore
@@ -71,6 +74,10 @@ class CustomPartyStartButtons(ui.View):
         self.move_button.callback = self.move_users
         self.add_item(self.move_button)
         
+        self.re_change_button = ui.Button(label="원래 통화방으로", style=discord.ButtonStyle.red, disabled=True)
+        self.re_change_button.callback = self.re_change
+        self.add_item(self.re_change_button)
+        
         self.interaction = interaction
 
     async def on_timeout(self) -> None:
@@ -80,9 +87,10 @@ class CustomPartyStartButtons(ui.View):
     @ui.button(label='시작', style=ButtonStyle.green)
     async def start(self, interaction: Interaction, button: ui.Button) -> None:
         try:
-            await interaction.response.defer()
+            msg = await interaction.followup.send('팀 분배 중...')
             def find_best_split(current_index, current_team1, current_team2, current_score1, current_score2): # type: ignore
-                global best_difference, best_team1, best_team2
+                global best_difference, best_team1, best_team2, count
+                count += 1
                 
                 # 모든 플레이어를 처리했을 때
                 if current_index == len(player_scores):
@@ -107,13 +115,15 @@ class CustomPartyStartButtons(ui.View):
 
             global player
 
-            global best_difference, best_team1, best_team2
+            global best_difference, best_team1, best_team2, count
             best_difference = float('inf')
             best_team1 = []
             best_team2 = []
+            count = 0
             # 플레이어의 랭크를 점수로 변환
             player_scores = [(name, data['rank']) for name, data in self.custom_party.players.items()]
             
+            msg.edit(content=f'팀 분배 완료..! {count}번의 경우의 수를 확인.\n역할을 분배합니다..') # type: ignore
             # 백트래킹 시작
             find_best_split(0, [], [], 0, 0)
 
@@ -145,7 +155,7 @@ class CustomPartyStartButtons(ui.View):
             for member in best_team2:
                 await self.custom_party.players[member]["user"].add_roles(role2)
                 modifed_best_team2.append(f"{member} - {self.custom_party.players[member]['emoji']}")
-
+            msg.delete() # type: ignore
             embeds = []
             embeds.append(discord.Embed(title="내전 팀 분배", description="팀 분배가 완료되었습니다.", color=0x00ff00))
 
@@ -156,8 +166,11 @@ class CustomPartyStartButtons(ui.View):
             embeds.append(discord.Embed(title=f"팀 2", color=0x0000ff))
             embeds[2].set_thumbnail(url=emoji_icon_assests[f"competitivetiers{avg_rank2}"])
             embeds[2].add_field(name="", value="\n".join(modifed_best_team2), inline=False)
+            self.is_started = True
 
             await interaction.followup.send(embeds=embeds)
+            self.check()
+
         except Exception as e:
             print(f"CustomPartyStartButtons.start:{e}")
 
@@ -165,13 +178,15 @@ class CustomPartyStartButtons(ui.View):
     async def cancel(self, interaction: Interaction, button: ui.Button) -> None:
         await interaction.followup.send('Party canceled!')
 
+    def check(self):
+        if self.is_started and self.is_voice_channel_set:
+            self.move_button.disabled = False
+
     async def select_callback(self, interaction: Interaction[ValorantBot]):
         self.selected_channels = [interaction.guild.get_channel(int(channel_id)) for channel_id in self.select.values] # type: ignore
         if len(self.selected_channels) == 2:
-            self.move_button.disabled = False
+            self.check()
             self.remove_item(self.select)  # 드롭다운 삭제
-        else:
-            self.move_button.disabled = True
         await interaction.response.edit_message(view=self)
 
         
@@ -198,8 +213,7 @@ class CustomPartyStartButtons(ui.View):
             print(e)
             await interaction.followup.send('음성 채널 이동 실패!')
 
-    @ui.button(label='원래 통화방으로', style=ButtonStyle.red)
-    async def re_change(self, interaction: Interaction, button: ui.Button) -> None:
+    async def re_change(self, interaction: Interaction) -> None:
         await interaction.response.defer()
         try:
             for member in self.custom_party.best_team2:
