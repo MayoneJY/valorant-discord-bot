@@ -46,7 +46,7 @@ class CustomPartyJoinButtons(ui.View):
 
     @ui.button(label='퇴장', style=ButtonStyle.red)
     async def leave(self, interaction: Interaction, button: ui.Button) -> None:
-        await interaction.response.send_message('Left the party!')
+        await interaction.followup.send('Left the party!')
 
 class CustomPartyStartButtons(ui.View):
     def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot) -> None:
@@ -152,7 +152,7 @@ class CustomPartyStartButtons(ui.View):
 
     @ui.button(label='취소', style=ButtonStyle.red)
     async def cancel(self, interaction: Interaction, button: ui.Button) -> None:
-        await interaction.response.send_message('Party canceled!')
+        await interaction.followup.send('Party canceled!')
 
     async def select_callback(self, interaction: Interaction[ValorantBot]):
         self.selected_channels = [interaction.guild.get_channel(int(channel_id)) for channel_id in self.select.values] # type: ignore
