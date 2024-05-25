@@ -216,7 +216,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
     @app_commands.command(description='내전에 참여합니다.')
     @app_commands.describe(tier="티어를 입력하세요.(예: '플3', '언랭', '레디')")
-    @app_commands.guild_only()
     async def party_join(self, interaction: Interaction[ValorantBot], tier: str) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -235,17 +234,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
         else:
             await interaction.followup.send('Failed to join the party.', ephemeral=True)
 
-
-    @app_commands.command(description='내전 음성 채널을 나눕니다.')
-    @app_commands.guild_only()
-    async def party_voice_split(self, interaction: Interaction[ValorantBot], tier: str) -> None:
-        await interaction.response.defer(ephemeral=True)
-
-        if interaction.channel not in self.party:
-            await interaction.followup.send('파티가 생성되지 않았습니다.', ephemeral=True)
-            return
-
-        await self.party[interaction.channel].move_users(interaction,)
     async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
         
         # check if user is logged in
