@@ -7,6 +7,7 @@ import discord
 from discord import Interaction, app_commands, ui, User
 from discord.ext import commands, tasks
 from discord.utils import MISSING
+from discord.ext.commands import has_permissions
 
 from utils.checks import owner_only
 from utils.errors import ValorantBotError
@@ -189,6 +190,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
     @app_commands.command(description='View your player profile')
     @app_commands.guild_only()
+    @has_permissions(manage_roles=True)
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
         # # check if user is logged in
         await interaction.response.defer()
