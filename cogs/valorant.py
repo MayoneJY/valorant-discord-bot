@@ -188,28 +188,28 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
     @app_commands.command(description='View your player profile')
+    @app_commands.guild_only()
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
-        try:
             # check if user is logged in
 
-            await interaction.response.defer()
+        self.party[interaction.channel] = {}
 
-            self.party[interaction.channel] = {}
+        try:
+            existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+            existing_role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+            if existing_role:
+                await existing_role.delete()
+            if existing_role2:
+                await existing_role2.delete()
+        except Exception as e:
+            raise ValorantBotError('역할 관리 권한이 없는 거 같아요.. \n역할 관리 권한을 부여해주세요! :sob:')
+            return
 
-            try:
-                existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
-                existing_role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
-                if existing_role:
-                    await existing_role.delete()
-                if existing_role2:
-                    await existing_role2.delete()
-            except Exception as e:
-                raise ValorantBotError('역할 관리 권한이 없는 거 같아요.. \n역할 관리 권한을 부여해주세요! :sob:')
-                return
+        await interaction.guild.create_role(name="VAL_1") # type: ignore
+        await interaction.guild.create_role(name="VAL_2") # type: ignore
+        await interaction.response.defer(ephemeral=True)
 
-            await interaction.guild.create_role(name="VAL_1") # type: ignore
-            await interaction.guild.create_role(name="VAL_2") # type: ignore
-            await interaction.response.defer(ephemeral=True)
+        try:
             self.party[interaction.channel] = CustomParty(self, interaction, self.bot)
             await self.party[interaction.channel].initialize()
         except Exception as e:
