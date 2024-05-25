@@ -188,7 +188,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
     @app_commands.command(description='View your player profile')
-    @app_commands.guild_only()
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
         try:
             # check if user is logged in
