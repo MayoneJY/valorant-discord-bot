@@ -87,6 +87,7 @@ class CustomPartyStartButtons(ui.View):
     @ui.button(label='시작', style=ButtonStyle.green)
     async def start(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
         try:
+            await interaction.response.defer()
             msg = await interaction.followup.send('팀 분배 중...')
             def find_best_split(current_index, current_team1, current_team2, current_score1, current_score2): # type: ignore
                 global best_difference, best_team1, best_team2, count
