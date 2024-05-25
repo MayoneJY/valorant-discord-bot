@@ -192,7 +192,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
         # # check if user is logged in
         try:
-            await interaction.response.defer()
             self.party[interaction.channel] = {}
 
             existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
