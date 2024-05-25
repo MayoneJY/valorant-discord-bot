@@ -52,3 +52,11 @@ class DatabaseError(app_commands.AppCommandError):
     """
 
     pass
+
+
+class PermissionMangeRoleError(app_commands.AppCommandError):
+    """
+    Raised whenever there's a problem while attempting to manage roles.
+    """
+
+    pass

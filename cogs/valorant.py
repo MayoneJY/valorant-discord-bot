@@ -7,7 +7,6 @@ import discord
 from discord import Interaction, app_commands, ui, User
 from discord.ext import commands, tasks
 from discord.utils import MISSING
-from discord.ext.commands import has_permissions
 
 from utils.checks import owner_only
 from utils.errors import ValorantBotError
@@ -190,7 +189,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
     @app_commands.command(description='View your player profile')
     @app_commands.guild_only()
-    @has_permissions(manage_roles=True)
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
         # # check if user is logged in
         await interaction.response.defer()
@@ -199,9 +197,12 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
             existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
             existing_role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
-            if existing_role:
-                await existing_role.delete()
+            try:
+                if existing_role:
+                    await existing_role.delete()
+            except Exception as e:
                 
+                return
             if existing_role2:
                 await existing_role2.delete()
 

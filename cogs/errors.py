@@ -23,6 +23,7 @@ from utils.errors import (
     NotOwner,
     ResponseError,
     ValorantBotError,
+    PermissionMangeRoleError,
 )
 
 if TYPE_CHECKING:
@@ -61,6 +62,8 @@ class ErrorHandler(commands.Cog):
             error_message = 'Could not connect to Riot server.'
         elif isinstance(error, (CommandOnCooldown | AppCommandNotFound | MissingPermissions | BotMissingPermissions)):
             error = error
+        elif isinstance(error, PermissionMangeRoleError):
+            error_message = 'Could not manage roles.'
         # else:
         #     traceback.print_exception(type(error), error)
 
@@ -91,6 +94,8 @@ class ErrorHandler(commands.Cog):
                 cm_error = 'An error occurred while processing your request.'
         elif isinstance(error, BadLiteralArgument):
             cm_error = f"**Invalid literal:** {', '.join(error.literals)}"
+        elif isinstance(error, PermissionMangeRoleError):
+            cm_error = 'Could not manage roles.'
         else:
             traceback.print_exception(type(error), error, error.__traceback__)
             cm_error = 'An unknown error occurred, sorry'
