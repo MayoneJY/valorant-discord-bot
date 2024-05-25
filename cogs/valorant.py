@@ -196,9 +196,9 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         self.party[interaction.channel] = {}
 
-        existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
-        existing_role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
         try:
+            existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+            existing_role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
             if existing_role:
                 await existing_role.delete()
             if existing_role2:
@@ -215,7 +215,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             await self.party[interaction.channel].initialize()
         except Exception as e:
             print(e)
-            await interaction.followup.send('테스트중인 커맨드입니다. 빠르게 사용할 수 있게 만들게요! :yum:')
+            raise ValorantBotError('테스트중인 커맨드입니다. 빠르게 사용할 수 있게 만들게요! :yum:')
 
     @app_commands.command(description='내전에 참여합니다.')
     @app_commands.describe(tier="티어를 입력하세요.(예: '플3', '언랭', '레디')")
