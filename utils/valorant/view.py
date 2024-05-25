@@ -123,7 +123,7 @@ class CustomPartyStartButtons(ui.View):
             # 플레이어의 랭크를 점수로 변환
             player_scores = [(name, data['rank']) for name, data in self.custom_party.players.items()]
             
-            await msg.edit(content=f'팀 분배 완료..! {count}번의 경우의 수를 확인.\n역할을 분배합니다..') # type: ignore
+            await msg.edit(content=f'팀 분배 완료..! `{count}`번의 경우의 수를 확인.\n역할을 분배합니다..') # type: ignore
             # 백트래킹 시작
             find_best_split(0, [], [], 0, 0)
 
