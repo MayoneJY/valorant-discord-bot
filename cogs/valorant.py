@@ -205,6 +205,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 await existing_role2.delete()
         except Exception as e:
             raise ValorantBotError('역할 관리 권한이 없는 거 같아요.. \n역할 관리 권한을 부여해주세요! :sob:')
+            return
 
         await interaction.guild.create_role(name="VAL_1") # type: ignore
         await interaction.guild.create_role(name="VAL_2") # type: ignore
