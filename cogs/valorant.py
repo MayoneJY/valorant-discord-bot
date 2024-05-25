@@ -198,15 +198,21 @@ class ValorantCog(commands.Cog, name='Valorant'):
             existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
             existing_role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
             if existing_role:
-                await existing_role.delete()
+                # 모든 파티원을 제거
+                for member in existing_role.members:
+                    await member.remove_roles(existing_role)
+            else:
+                await interaction.guild.create_role(name="VAL_1") # type: ignore
             if existing_role2:
-                await existing_role2.delete()
+                # 모든 파티원을 제거
+                for member in existing_role2.members:
+                    await member.remove_roles(existing_role2)
+            else:
+                await interaction.guild.create_role(name="VAL_2") # type: ignore
         except Exception as e:
             raise ValorantBotError('역할 관리 권한이 없는 거 같아요.. \n역할 관리 권한을 부여해주세요! :sob:')
             return
-
-        await interaction.guild.create_role(name="VAL_1") # type: ignore
-        await interaction.guild.create_role(name="VAL_2") # type: ignore
+        
         await interaction.response.defer(ephemeral=True)
 
         try:
