@@ -158,7 +158,7 @@ class CustomPartyStartButtons(ui.View):
                 modifed_best_team2.append(f"{member} - {self.custom_party.players[member]['emoji']}")
             await msg.delete() # type: ignore
             embeds = []
-            embeds.append(discord.Embed(title="내전 팀 분배", description="팀 분배가 완료되었습니다.\n`{count}`번의 경우의 수로 밸런스를 맞췄습니다.", color=0x00ff00))
+            embeds.append(discord.Embed(title="내전 팀 분배", description=f"팀 분배가 완료되었습니다.\n`{count}`번의 경우의 수로 밸런스를 맞췄습니다.", color=0x00ff00))
 
             embeds.append(discord.Embed(title=f"팀 1", color=0xff0000))
             embeds[1].set_thumbnail(url=emoji_icon_assests[f"competitivetiers{avg_rank1}"])
@@ -187,6 +187,7 @@ class CustomPartyStartButtons(ui.View):
     async def select_callback(self, interaction: Interaction[ValorantBot]):
         self.selected_channels = [interaction.guild.get_channel(int(channel_id)) for channel_id in self.select.values] # type: ignore
         if len(self.selected_channels) == 2:
+            self.is_voice_channel_set = True
             await self.check(interaction)
             self.remove_item(self.select)  # 드롭다운 삭제
         await interaction.response.edit_message(view=self)
