@@ -182,6 +182,7 @@ class CustomPartyStartButtons(ui.View):
     async def check(self, interaction: Interaction[ValorantBot]):
         if self.is_started and self.is_voice_channel_set:
             self.move_button.disabled = False
+            self.re_change_button.disabled = False
             await interaction.response.edit_message(view=self)
 
     async def select_callback(self, interaction: Interaction[ValorantBot]):
