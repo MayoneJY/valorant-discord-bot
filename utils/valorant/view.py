@@ -87,7 +87,7 @@ class CustomPartyStartButtons(ui.View):
     @ui.button(label='시작', style=ButtonStyle.green)
     async def start(self, interaction: Interaction, button: ui.Button) -> None:
         try:
-            msg = await interaction.followup.send('팀 분배 중...')
+            await interaction.followup.send('팀 분배 중...')
             def find_best_split(current_index, current_team1, current_team2, current_score1, current_score2): # type: ignore
                 global best_difference, best_team1, best_team2, count
                 count += 1
@@ -123,7 +123,7 @@ class CustomPartyStartButtons(ui.View):
             # 플레이어의 랭크를 점수로 변환
             player_scores = [(name, data['rank']) for name, data in self.custom_party.players.items()]
             
-            await msg.edit(content=f'팀 분배 완료..! `{count}`번의 경우의 수를 확인.\n역할을 분배합니다..') # type: ignore
+            # await msg.edit(content=f'팀 분배 완료..! `{count}`번의 경우의 수를 확인.\n역할을 분배합니다..') # type: ignore
             # 백트래킹 시작
             find_best_split(0, [], [], 0, 0)
 
@@ -155,7 +155,7 @@ class CustomPartyStartButtons(ui.View):
             for member in best_team2:
                 await self.custom_party.players[member]["user"].add_roles(role2)
                 modifed_best_team2.append(f"{member} - {self.custom_party.players[member]['emoji']}")
-            await msg.delete() # type: ignore
+            # await msg.delete() # type: ignore
             embeds = []
             embeds.append(discord.Embed(title="내전 팀 분배", description="팀 분배가 완료되었습니다.", color=0x00ff00))
 
