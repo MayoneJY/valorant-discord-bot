@@ -25,11 +25,16 @@ if TYPE_CHECKING:
 
 
 class CustomPartyJoinButtons(ui.View):
-    def __init__(self, custom_party: CustomParty, valorantCog, bot: ValorantBot) -> None: # type: ignore
-        super().__init__(timeout=None)
+    def __init__(self, interaction:Interaction[ValorantBot], custom_party: CustomParty, valorantCog, bot: ValorantBot) -> None: # type: ignore
+        super().__init__(timeout=10)
         self.custom_party = custom_party
         self.valorantCog = valorantCog
         self.bot = bot
+        self.interaction = interaction
+
+    async def on_timeout(self) -> None:
+        """Called when the view times out"""
+        await self.interaction.edit_original_response(view=self)
 
     @ui.button(label='참여', style=ButtonStyle.green)
     async def join(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
@@ -50,7 +55,7 @@ class CustomPartyJoinButtons(ui.View):
 
 class CustomPartyStartButtons(ui.View):
     def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot) -> None:
-        super().__init__(timeout=None)
+        super().__init__(timeout=10)
         self.bot = bot
         self.custom_party = custom_party
         self.selected_channels = []
@@ -65,6 +70,12 @@ class CustomPartyStartButtons(ui.View):
         self.move_button = ui.Button(label="음성 채널 이동", style=discord.ButtonStyle.success, disabled=True)
         self.move_button.callback = self.move_users
         self.add_item(self.move_button)
+        
+        self.interaction = interaction
+
+    async def on_timeout(self) -> None:
+        """Called when the view times out"""
+        await self.interaction.edit_original_response(view=self)
 
     @ui.button(label='시작', style=ButtonStyle.green)
     async def start(self, interaction: Interaction, button: ui.Button) -> None:
