@@ -242,14 +242,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
         else:
             await interaction.followup.send('Failed to join the party.', ephemeral=True)
 
-    @app_commands.command(description='테스트')
-    async def party_test(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer()
-        msg = await interaction.followup.send('테스트중입니다.')
-
-        msg.edit(content='테스트중입니다.2') # type: ignore
-        msg.delete() # type: ignore
-
     async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
         
         # check if user is logged in
