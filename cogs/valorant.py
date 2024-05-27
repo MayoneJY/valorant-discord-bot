@@ -298,7 +298,10 @@ class ValorantCog(commands.Cog, name='Valorant'):
         
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
 
-        players = self.party[interaction.channel].invite_room()
+        players = self.party[interaction.channel].invite_room() # list[dict[username: str, tag: str]]
+
+        # 자기 자신 제외
+        players = [player for player in players if player['username'] != endpoint.player.split('#')[0]]     
 
         endpoint.request_party_invite(endpoint.fetch_party_id(), players)
         
@@ -306,7 +309,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
     async def get_player_info(self, interaction: Interaction[ValorantBot]) -> None:
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
-        await interaction.followup.send(embed=Embed(endpoint.player))
+        return endpoint.player
 
 
     async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
