@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord import Interaction, app_commands, ui, User
-from discord.interactions import InteractionChannel
 from discord.ext import commands, tasks
 from discord.utils import MISSING
 
@@ -40,7 +39,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         self.endpoint: API_ENDPOINT = MISSING
         self.db: DATABASE = MISSING
         self.reload_cache.start()
-        self.party: dict[InteractionChannel|None, CustomParty] = {}
+        self.party = {}
 
     def cog_unload(self) -> None:
         self.reload_cache.cancel()
