@@ -187,7 +187,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
-    @app_commands.command(name="파티 생성", description='View your player profile')
+    @app_commands.command(name="파티_생성", description='View your player profile')
     @app_commands.guild_only()
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
             # check if user is logged in
@@ -222,7 +222,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             print(e)
             raise ValorantBotError('테스트중인 커맨드입니다. 빠르게 사용할 수 있게 만들게요! :yum:')
 
-    @app_commands.command(name="파티 참여", description='내전에 참여합니다.')
+    @app_commands.command(name="파티_참여", description='내전에 참여합니다.')
     @app_commands.describe(tier="티어를 입력하세요.(예: '플3', '언랭', '레디')")
     async def party_join(self, interaction: Interaction[ValorantBot], tier: str) -> None:
         await interaction.response.defer(ephemeral=True)
@@ -243,7 +243,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             await interaction.followup.send('Failed to join the party.', ephemeral=True)
 
     
-    @app_commands.command(name="파티 채널 이동", description='내전 음성 채널을 나눕니다.')
+    @app_commands.command(name="파티_채널_이동", description='내전 음성 채널을 나눕니다.')
     @app_commands.guild_only()
     async def party_voice_split(self, interaction: Interaction[ValorantBot]) -> None:
         await interaction.response.defer(ephemeral=True)
@@ -263,7 +263,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await self.party[interaction.channel].move_users(interaction)
 
     
-    @app_commands.command(name="파티 채널 원위치", description='내전 음성 채팅을 다시 모입니다.')
+    @app_commands.command(name="파티_채널_원위치", description='내전 음성 채팅을 다시 모입니다.')
     @app_commands.guild_only()
     async def party_voice_rechange(self, interaction: Interaction[ValorantBot]) -> None:
         await interaction.response.defer(ephemeral=True)
