@@ -67,11 +67,11 @@ class ErrorHandler(commands.Cog):
         # else:
         #     traceback.print_exception(type(error), error)
 
+        print(f'Error: {error}')
         embed = discord.Embed(description=f'{str(error_message)[:2000]}', color=0xFE676E)
         if interaction.response.is_done():
             return await interaction.followup.send(embed=embed, ephemeral=True)
         await interaction.response.send_message(embed=embed, ephemeral=True)
-        print(f'Error: {error}')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context[ValorantBot], error: Exception) -> None:
