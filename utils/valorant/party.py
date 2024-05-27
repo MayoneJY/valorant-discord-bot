@@ -1,6 +1,7 @@
 from discord import Interaction, User, Member
 from utils.valorant import cache as Cache, useful, view as View
 from utils.valorant.embed import Embed, GetEmbed
+import discord
 
 from typing import TYPE_CHECKING, Any
 
@@ -36,3 +37,39 @@ class CustomParty():
         self.players.pop(player_id)
 
         return True
+    
+    async def move_users(self, interaction: Interaction[ValorantBot]):
+        await interaction.response.defer()
+        try:
+            role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+            role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+            await interaction.guild.chunk() # type: ignore
+            role_members1 = [member for member in interaction.guild.members if role1 in member.roles] # type: ignore
+            role_members2 = [member for member in interaction.guild.members if role2 in member.roles] # type: ignore
+            for member in role_members1:
+                # 음성채널 이동
+                if member.voice:
+                    await member.move_to(self.voice_channel[0]) # type: ignore
+
+            for member in role_members2:
+                # 음성채널 이동
+                if member.voice:
+                    await member.move_to(self.voice_channel[1]) # type: ignore
+
+            await interaction.followup.send('음성 채널 이동 완료!')
+        except Exception as e:
+            print(e)
+            await interaction.followup.send('음성 채널 이동 실패!')
+
+    async def re_change(self, interaction: Interaction) -> None:
+        await interaction.response.defer()
+        try:
+            for member in self.best_team2:
+                user = self.players[member]['user']
+                # 음성채널 이동
+                await user.move_to(self.voice_channel[0])
+            
+            await interaction.followup.send('음성 채널 이동 완료!')
+        except Exception as e:
+            print(e)
+            await interaction.followup.send('음성 채널 이동 실패!')

@@ -242,6 +242,46 @@ class ValorantCog(commands.Cog, name='Valorant'):
         else:
             await interaction.followup.send('Failed to join the party.', ephemeral=True)
 
+    
+    @app_commands.command(description='내전 음성 채널을 나눕니다.')
+    @app_commands.guild_only()
+    async def party_voice_split(self, interaction: Interaction[ValorantBot]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        if interaction.channel not in self.party:
+            raise ValorantBotError('파티가 생성되지 않았습니다.')
+            return
+        
+        if len(self.party[interaction.channel].voice_channel) != 2:
+            raise ValorantBotError('음성 채널을 선택하지 않았습니다.')
+            return
+        
+        if len(self.party[interaction.channel].best_team1) == 0:
+            raise ValorantBotError('팀을 나누지 않았습니다.')
+            return
+
+        await self.party[interaction.channel].move_users(interaction)
+
+    
+    @app_commands.command(description='내전 음성 채팅을 다시 모입니다.')
+    @app_commands.guild_only()
+    async def party_voice_rechange(self, interaction: Interaction[ValorantBot]) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        if interaction.channel not in self.party:
+            raise ValorantBotError('파티가 생성되지 않았습니다.')
+            return
+        
+        if len(self.party[interaction.channel].voice_channel) != 2:
+            raise ValorantBotError('음성 채널을 선택하지 않았습니다.')
+            return
+        
+        if len(self.party[interaction.channel].best_team1) == 0:
+            raise ValorantBotError('팀을 나누지 않았습니다.')
+            return
+
+        await self.party[interaction.channel].re_change(interaction)
+
     async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
         
         # check if user is logged in

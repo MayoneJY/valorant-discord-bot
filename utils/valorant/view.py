@@ -187,6 +187,7 @@ class CustomPartyStartButtons(ui.View):
 
     async def select_callback(self, interaction: Interaction[ValorantBot]):
         self.selected_channels = [interaction.guild.get_channel(int(channel_id)) for channel_id in self.select.values] # type: ignore
+        self.custom_party.voice_channel = self.selected_channels
         if len(self.selected_channels) == 2:
             self.is_voice_channel_set = True
             await self.check(interaction)
@@ -195,40 +196,10 @@ class CustomPartyStartButtons(ui.View):
 
         
     async def move_users(self, interaction: Interaction[ValorantBot]):
-        await interaction.response.defer()
-        try:
-            role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
-            role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
-            await interaction.guild.chunk() # type: ignore
-            role_members1 = [member for member in interaction.guild.members if role1 in member.roles] # type: ignore
-            role_members2 = [member for member in interaction.guild.members if role2 in member.roles] # type: ignore
-            for member in role_members1:
-                # 음성채널 이동
-                if member.voice:
-                    await member.move_to(self.selected_channels[0]) # type: ignore
-
-            for member in role_members2:
-                # 음성채널 이동
-                if member.voice:
-                    await member.move_to(self.selected_channels[1]) # type: ignore
-
-            await interaction.followup.send('음성 채널 이동 완료!')
-        except Exception as e:
-            print(e)
-            await interaction.followup.send('음성 채널 이동 실패!')
+        await self.custom_party.move_users(interaction)
 
     async def re_change(self, interaction: Interaction) -> None:
-        await interaction.response.defer()
-        try:
-            for member in self.custom_party.best_team2:
-                user = self.custom_party.players[member]['user']
-                # 음성채널 이동
-                await user.move_to(self.selected_channels[0])
-            
-            await interaction.followup.send('음성 채널 이동 완료!')
-        except Exception as e:
-            print(e)
-            await interaction.followup.send('음성 채널 이동 실패!')
+        await self.custom_party.re_change(interaction)
         
 
 class share_button(ui.View):
