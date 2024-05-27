@@ -271,6 +271,8 @@ class API_ENDPOINT:
         Get the party ID of the player
         """
         data = self.fetch(endpoint=f'/parties/v1/players/{self.puuid}', url='pd')
+        print(self.puuid)
+        print(data)
         return data['Requests']['PartyID']
     
     def request_party_invite(self, party_id: str, players: list) -> None:
