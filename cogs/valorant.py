@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Literal
 
 import discord
 from discord import Interaction, app_commands, ui, User
+from discord.interactions import InteractionChannel
 from discord.ext import commands, tasks
 from discord.utils import MISSING
 
@@ -39,7 +40,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         self.endpoint: API_ENDPOINT = MISSING
         self.db: DATABASE = MISSING
         self.reload_cache.start()
-        self.party = {}
+        self.party: dict[InteractionChannel|None, CustomParty] = {}
 
     def cog_unload(self) -> None:
         self.reload_cache.cancel()
@@ -192,7 +193,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
             # check if user is logged in
 
-        self.party[interaction.channel] = {}
+        self.party.pop(interaction.channel, None)
 
         try:
             existing_role = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
