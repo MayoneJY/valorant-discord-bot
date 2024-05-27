@@ -306,7 +306,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
     async def get_player_info(self, interaction: Interaction[ValorantBot]) -> None:
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
-        print(endpoint.player)
+        await interaction.followup.send(embed=Embed(endpoint.player))
 
 
     async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
