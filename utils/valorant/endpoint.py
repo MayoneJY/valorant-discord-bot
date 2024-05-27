@@ -263,6 +263,23 @@ class API_ENDPOINT:
         current_season = data['QueueSkills']['competitive']['SeasonalInfoBySeasonID']
         current_Tier = current_season[season_id]['CompetitiveTier']
         return current_Tier
+    
+    # party endpoints
+
+    def fetch_party_id(self) -> str:
+        """
+        Get the party ID of the player
+        """
+        data = self.fetch(endpoint=f'/parties/v1/players/{self.puuid}', url='pd')
+        return data['Requests']['PartyID']
+    
+    def request_party_invite(self, party_id: str, players: list) -> None:
+        """
+        Request an invite to a party
+        """
+        for player in players:
+            self.put(endpoint=f'parties/v1/parties/{party_id}/invites/name/{player["name"]}/tag/{player["tag"]}', url='pd')
+
 
     # local utility functions
 

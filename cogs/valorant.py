@@ -282,6 +282,33 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         await self.party[interaction.channel].re_change(interaction)
 
+    
+    @app_commands.command(name="파티_방_생성", description='내전 방을 생성합니다.')
+    @app_commands.guild_only()
+    async def party_room_create(self, interaction: Interaction[ValorantBot]) -> None:
+        await interaction.response.defer()
+
+        if interaction.channel not in self.party:
+            raise ValorantBotError('파티가 생성되지 않았습니다.')
+            return
+        
+        if len(self.party[interaction.channel].best_team1) == 0:
+            raise ValorantBotError('팀을 나누지 않았습니다.')
+            return
+        
+        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
+
+        players = self.party[interaction.channel].invite_room()
+
+        endpoint.request_party_invite(endpoint.fetch_party_id(), players)
+        
+    
+
+    async def get_player_info(self, interaction: Interaction[ValorantBot]) -> None:
+        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
+        print(endpoint.player)
+
+
     async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
         
         # check if user is logged in

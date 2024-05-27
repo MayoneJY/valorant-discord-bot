@@ -42,6 +42,7 @@ class CustomPartyJoinButtons(ui.View):
         player_id = str(user.global_name)
         rank = await self.valorantCog.get_tier_rank(interaction)
         emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
+        await self.valorantCog.get_player_info(interaction)
         if rank == -1:
             return
         if await self.custom_party.add_player(player_id, {"rank": rank, "user": user, "val_id": "test_val_id", "emoji": emoji}):
