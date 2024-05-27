@@ -196,9 +196,11 @@ class CustomPartyStartButtons(ui.View):
 
         
     async def move_users(self, interaction: Interaction[ValorantBot]):
+        await interaction.response.defer()
         await self.custom_party.move_users(interaction)
 
     async def re_change(self, interaction: Interaction[ValorantBot]) -> None:
+        await interaction.response.defer()
         await self.custom_party.re_change(interaction)
         
 

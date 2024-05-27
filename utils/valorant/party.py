@@ -40,7 +40,6 @@ class CustomParty():
         return True
     
     async def move_users(self, interaction: Interaction[ValorantBot]):
-        await interaction.response.defer()
         try:
             role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
             role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
@@ -63,7 +62,6 @@ class CustomParty():
             await interaction.followup.send('음성 채널 이동 실패!')
 
     async def re_change(self, interaction: Interaction) -> None:
-        await interaction.response.defer()
         try:
             for member in self.best_team2:
                 user = self.players[member]['user']
