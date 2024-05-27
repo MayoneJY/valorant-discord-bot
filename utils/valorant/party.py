@@ -73,9 +73,10 @@ class CustomParty():
             print(e)
             await interaction.followup.send('음성 채널 이동 실패!')
 
-    async def invite_room(self) -> list:
+    def invite_room(self, user:str) -> list:
         players = []
         for player in self.players:
-            players.append([player.username, player.tag])
+            if user != self.players[player]['username'] + "#" + self.players[player]['tag']:
+                players.append({"headers": self.players[player]['headers']})
 
         return players

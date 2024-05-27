@@ -53,6 +53,7 @@ class API_ENDPOINT:
             self.region = auth['region']
             self.player = auth['player_name']
             self.locale_code = auth.get('locale_code', 'en-US')
+            self.headers = auth['headers']
             self.__format_region()
             self.__build_urls()
         except Exception as e:
@@ -95,6 +96,32 @@ class API_ENDPOINT:
             # await self.refresh_token()
             # return await self.fetch(endpoint=endpoint, url=url, errors=errors)
         return {}
+    
+    def fetch2(self, endpoint: str = '/', url: str = 'pd', errors: dict[str, Any] | None = None) -> dict[str, Any]:
+        """fetch data from the api"""
+
+
+        endpoint_url = "https://glz-kr-1.kr.a.pvp.net"
+
+        data = None
+
+        r = requests.get(f'{endpoint_url}{endpoint}', headers=self.headers)
+
+        try:  # noqa: SIM105
+            data = json.loads(r.text)
+        except Exception:
+            pass
+
+        if 'httpStatus' not in data:  # type: ignore
+            return data  # type: ignore
+        
+        if r.status_code == 400:
+            response = LocalErrorResponse('AUTH', self.locale_code)
+            raise ResponseError(response.get('COOKIES_EXPIRED'))
+            # await self.refresh_token()
+            # return await self.fetch(endpoint=endpoint, url=url, errors=errors)
+        return {}
+        
 
     def put(
         self,
@@ -116,6 +143,69 @@ class API_ENDPOINT:
             raise ResponseError(self.response.get('REQUEST_FAILED'))
 
         return data
+    
+    def put2(
+        self,
+        endpoint: str = '/',
+        url: str = 'pd',
+        data: dict[str, Any] | list[Any] | None = None,
+        errors: dict[str, Any] | None = None,
+    ) -> Any:
+        """put data to the api"""
+
+        endpoint_url = "https://glz-kr-1.kr.a.pvp.net"
+
+        r = requests.put(f'{endpoint_url}{endpoint}', headers=self.headers, data=data)
+        data = json.loads(r.text)
+
+        if data is None:
+            raise ResponseError(self.response.get('REQUEST_FAILED'))
+
+        return data
+    
+    def post(
+        self,
+        endpoint: str = '/',
+        url: str = 'pd',
+        data: dict[str, Any] | list[Any] | None = None,
+        errors: dict[str, Any] | None = None,
+    ) -> Any:
+        """post data to the api"""
+
+        self.locale_response()
+
+        endpoint_url = getattr(self, url)
+
+        r = requests.post(f'{endpoint_url}{endpoint}', headers=self.headers, data=data)
+        data = json.loads(r.text)
+
+        if data is None:
+            raise ResponseError(self.response.get('REQUEST_FAILED'))
+
+        return data
+    
+    def post2(
+        self,
+        endpoint: str = '/',
+        url: str = 'pd',
+        data: dict[str, Any] | list[Any] | None = None,
+        errors: dict[str, Any] | None = None,
+        headers: dict[str, Any] | None = None
+    ) -> Any:
+        """post data to the api"""
+
+        endpoint_url = "https://glz-kr-1.kr.a.pvp.net"
+        if headers is not None:
+            r = requests.post(f'{endpoint_url}{endpoint}', headers=headers, json=data)
+        else:
+            r = requests.post(f'{endpoint_url}{endpoint}', headers=self.headers, json=data)
+        data = json.loads(r.text)
+
+        if data is None:
+            raise ResponseError(self.response.get('REQUEST_FAILED'))
+
+        return data
+    
 
     # contracts endpoints
 
@@ -270,17 +360,74 @@ class API_ENDPOINT:
         """
         Get the party ID of the player
         """
-        data = self.fetch(endpoint=f'/parties/v1/players/{self.puuid}', url='pd')
         print(self.puuid)
-        print(data)
-        return data['Requests']['PartyID']
+
+        r = requests.get(f'https://glz-kr-1.kr.a.pvp.net/parties/v1/players/{self.puuid}?aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1=186&aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-awsedge-1=122&aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-1=147&aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-awsedge-1=151&aresriot.aws-rclusterprod-aps1-1.ap-gp-mumbai-awsedge-1=22&aresriot.aws-rclusterprod-apse1-1.ap-gp-singapore-1=77&aresriot.aws-rclusterprod-apse1-1.ap-gp-singapore-awsedge-1=79&aresriot.aws-rclusterprod-apse2-1.ap-gp-sydney-1=258&aresriot.aws-rclusterprod-apse2-1.ap-gp-sydney-awsedge-1=170&preferredgamepods=aresriot.aws-rclusterprod-aps1-1.ap-gp-mumbai-awsedge-1', headers=self.headers)
+
+        try:  # noqa: SIM105
+            data = json.loads(r.text)
+        except Exception:
+            pass
+
+        # if 'httpStatus' not in data:  # type: ignore
+        #     return data  # type: ignore
+        
+        # data = self.fetch(endpoint=f'/parties/v1/players/{self.puuid}', url='pd')
+        # data = self.fetch(endpoint=f'https://glz-kr-1.kr.a.pvp.net/parties/v1/players/{self.puuid}?aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1=186&aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-awsedge-1=122&aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-1=147&aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-awsedge-1=151&aresriot.aws-rclusterprod-aps1-1.ap-gp-mumbai-awsedge-1=22&aresriot.aws-rclusterprod-apse1-1.ap-gp-singapore-1=77&aresriot.aws-rclusterprod-apse1-1.ap-gp-singapore-awsedge-1=79&aresriot.aws-rclusterprod-apse2-1.ap-gp-sydney-1=258&aresriot.aws-rclusterprod-apse2-1.ap-gp-sydney-awsedge-1=170&preferredgamepods=aresriot.aws-rclusterprod-aps1-1.ap-gp-mumbai-awsedge-1')
+
+        return data['CurrentPartyID']
     
     def request_party_invite(self, party_id: str, players: list) -> None:
         """
         Request an invite to a party
         """
         for player in players:
-            self.put(endpoint=f'parties/v1/parties/{party_id}/invites/name/{player["name"]}/tag/{player["tag"]}', url='pd')
+            self.fetch(endpoint=f'/parties/v1/parties/{party_id}/invites/name/{player["name"]}/tag/{player["tag"]}', url='pd')
+
+    def invite_party(self, party_id: str, players: list) -> None:
+        """
+        Set a party join code
+        """
+        for player in players:
+            self.post2(endpoint=f'/parties/v1/parties/{party_id}/invites/name/{player["username"]}/tag/{player["tag"]}', url='pd')
+        
+    
+    def set_party_accessibility(self, party_id: str) -> None:
+        """
+        Set party accessibility
+        """
+        data = self.post2(endpoint=f'/parties/v1/parties/{party_id}/accessibility', url='pd', data={"accessibility": "OPEN"})
+        print(data)
+
+
+    def generate_party_code(self, party_id: str) -> str:
+        """
+        Generate a party code
+        """
+        data = self.post2(endpoint=f'/parties/v1/parties/{party_id}/invitecode', url='pd')
+        return data['InviteCode']
+    
+    def request_party_join(self, party_id: str, players: list) -> None:
+        """
+        Request to join a party
+        """
+        for player in players:
+            headers = self.headers
+            headers['Authorization'] = player['headers']['Authorization']
+            headers['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
+            self.post2(endpoint=f'/parties/v1/parties/{party_id}/request', url='pd', headers=headers)
+
+    def join_party_code(self, players: list, code: str) -> None:
+        """
+        Join a party using a code
+        """
+        for player in players:
+            headers = self.headers
+            headers['Authorization'] = player['headers']['Authorization']
+            headers['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
+            data = self.post2(endpoint=f'/parties/v1/players/joinbycode/{code}', url='pd')
+        print(data)
+
 
 
     # local utility functions

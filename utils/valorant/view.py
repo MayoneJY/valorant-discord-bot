@@ -38,21 +38,31 @@ class CustomPartyJoinButtons(ui.View):
 
     @ui.button(label='참여', style=ButtonStyle.green)
     async def join(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
-        user = interaction.user
-        player_id = str(user.global_name)
-        rank = await self.valorantCog.get_tier_rank(interaction)
-        emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
-        player = await self.valorantCog.get_player_info(interaction)
-        if rank == -1:
-            return
-        if await self.custom_party.add_player(player_id, {"rank": rank, "user": user, "val_id": "test_val_id", "emoji": emoji, "username": player.split("#")[0], "tag": player.split("#")[1]}):
-            await interaction.followup.send('Joined the party!', ephemeral=True)
-        else:
-            await interaction.followup.send('Failed to join the party.', ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
+        p_msg = await interaction.followup.send('파티 입장중..' , ephemeral=True)
+        try:
+            user = interaction.user
+            player_id = str(user.global_name)
+            rank = await self.valorantCog.get_tier_rank(interaction)
+            emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
+            player_info = await self.valorantCog.get_player_info(interaction)
+            get_player_headers = await self.valorantCog.get_player_headers(interaction)
+
+            if rank == -1:
+                return
+            
+            if await self.custom_party.add_player(player_id, {"rank": rank, "user": user, "emoji": emoji, "headers": get_player_headers, "username": player_info.split("#")[0], "tag": player_info.split("#")[1]}):
+                await p_msg.edit(content="참여 완료!") # type: ignore
+            else:
+                await p_msg.edit(content="참여 실패..") # type: ignore
+        except Exception as e:
+            await interaction.followup.send(f'참여 실패.. \n {e}')
 
     @ui.button(label='퇴장', style=ButtonStyle.red)
-    async def leave(self, interaction: Interaction, button: ui.Button) -> None:
-        await interaction.followup.send('Left the party!')
+    async def leave(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
+        await interaction.followup.send('파티에 퇴장했어요!')
+
+        await self.custom_party.remove_player(str(interaction.user.global_name))
 
 class CustomPartyStartButtons(ui.View):
     def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot) -> None:

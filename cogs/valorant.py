@@ -305,25 +305,42 @@ class ValorantCog(commands.Cog, name='Valorant'):
         except Exception as e:
             print(e)
             raise ValorantBotError(f'파티 방 생성에 실패했습니다.\n{e}')
-        players = self.party[interaction.channel].invite_room() # list[dict[username: str, tag: str]]
+            return
+        players = self.party[interaction.channel].invite_room(endpoint.player) # list[puuid]
+        try:
+            endpoint.set_party_accessibility(partyid)
+        except Exception as e:
+            print(e)
+            raise ValorantBotError(f'파티 공개 파티 전환에 실패했습니다.\n{e}')
+            return
 
-        # 자기 자신 제외
-        players = [player for player in players if player['username'] != endpoint.player.split('#')[0]]     
+        try:
+            code = endpoint.generate_party_code(partyid)
+        except Exception as e:
+            print(e)
+            raise ValorantBotError(f'파티 코드 생성에 실패했습니다.\n{e}')
+            return
 
-        endpoint.request_party_invite(partyid, players)
+        msg = await msg.edit(content='팀원 입장..') # type: ignore
+        endpoint.join_party_code(players, code)
+
+        await msg.edit(content='파티 방을 생성했습니다.') # type: ignore
+
         
     
 
     async def get_player_info(self, interaction: Interaction[ValorantBot]) -> None:
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
         return endpoint.player
+    
+    async def get_player_headers(self, interaction: Interaction[ValorantBot]) -> dict[str, str]:
+        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
+        return endpoint.headers
 
 
     async def get_tier_rank(self, interaction: Interaction[ValorantBot]) -> int:
         
         # check if user is logged in
-
-        await interaction.response.defer()
 
         # response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
 
@@ -341,7 +358,10 @@ class ValorantCog(commands.Cog, name='Valorant'):
             return -1
 
         # data
-        data = endpoint.get_player_tier_rank() # dict[str, Any]
+        try:
+            data = endpoint.get_player_tier_rank() # dict[str, Any]
+        except:
+            data = 0
 
         return int(data)
 
