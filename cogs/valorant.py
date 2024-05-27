@@ -298,10 +298,13 @@ class ValorantCog(commands.Cog, name='Valorant'):
         
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
 
-        partyid = endpoint.fetch_party_id()
+        try:
+            partyid = endpoint.fetch_party_id()
 
-        await interaction.followup.send(f'파티 방을 생성합니다. {partyid}')
-
+            await interaction.followup.send(f'파티 방을 생성합니다. {partyid}')
+        except Exception as e:
+            print(e)
+            raise ValorantBotError(f'파티 방 생성에 실패했습니다.\n{e}')
         players = self.party[interaction.channel].invite_room() # list[dict[username: str, tag: str]]
 
         # 자기 자신 제외
