@@ -30,10 +30,10 @@ class CustomParty():
     async def add_player(self, player_id: str, player: dict) -> bool:
         self.players[player_id] = player
         await self.message.edit(embed=GetEmbed.party_list(self.players)) # type: ignore
-        
+
         return True
     
-    def remove_player(self, player_id: str) -> bool:
+    async def remove_player(self, player_id: str) -> bool:
         self.players.pop(player_id)
         await self.message.edit(embed=GetEmbed.party_list(self.players)) # type: ignore
 
