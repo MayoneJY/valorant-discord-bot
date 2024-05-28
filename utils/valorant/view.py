@@ -82,7 +82,7 @@ class CustomPartyStartButtons(ui.View):
         self.is_move_button = is_buttons
         self.is_re_change_button = is_buttons
         self.is_invite_button = is_buttons
-        print("is_select", self.is_select, "is_buttons", self.is_buttons, "is_move_button", self.is_move_button, "is_re_change_button", self.is_re_change_button, "is_invite_button", self.is_invite_button)
+        
         self.msg = None
 
 
@@ -218,8 +218,14 @@ class CustomPartyStartButtons(ui.View):
 
     @ui.button(label='취소', style=ButtonStyle.red)
     async def cancel(self, interaction: Interaction, button: ui.Button) -> None:
-        await interaction.followup.send('Party canceled!')
-
+        await interaction.response.defer()
+        await interaction.followup.send('파티가 취소되었어요.. :sob:')
+        if self.msg:
+            await self.msg.delete()
+        else:
+            await interaction.edit_original_response(content="취소 된 파티 메시지입니다.", view=None)
+        
+        await self.custom_party.delete_party_list_message()
 
     async def check(self, interaction: Interaction[ValorantBot]):
         if self.is_started and self.is_voice_channel_set:
