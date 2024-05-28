@@ -20,6 +20,7 @@ from .resources import (
     shard_region_override,
 )
 
+import asyncio
 
 class API_ENDPOINT:
     def __init__(self) -> None:
@@ -71,7 +72,7 @@ class API_ENDPOINT:
 
     # self.__build_headers()
 
-    def fetch(self, endpoint: str = '/', url: str = 'pd', errors: dict[str, Any] | None = None) -> dict[str, Any]:
+    def fetch(self, endpoint: str = '/', url: str = 'pd', errors: dict[str, Any] | None = None, header: dict[str, Any] | None = None) -> dict[str, Any]:
         """fetch data from the api"""
 
         self.locale_response()
@@ -79,8 +80,10 @@ class API_ENDPOINT:
         endpoint_url = getattr(self, url)
 
         data = None
-
-        r = requests.get(f'{endpoint_url}{endpoint}', headers=self.headers)
+        if header is None:
+            r = requests.get(f'{endpoint_url}{endpoint}', headers=self.headers)
+        else:
+            r = requests.get(f'{endpoint_url}{endpoint}', headers=header)
 
         try:  # noqa: SIM105
             data = json.loads(r.text)
@@ -97,7 +100,7 @@ class API_ENDPOINT:
             # return await self.fetch(endpoint=endpoint, url=url, errors=errors)
         return {}
     
-    def fetch2(self, endpoint: str = '/', url: str = 'pd', errors: dict[str, Any] | None = None) -> dict[str, Any]:
+    def fetch2(self, endpoint: str = '/', url: str = 'pd', errors: dict[str, Any] | None = None, header: dict[str, Any] | None = None) -> dict[str, Any]:
         """fetch data from the api"""
 
 
@@ -105,7 +108,10 @@ class API_ENDPOINT:
 
         data = None
 
-        r = requests.get(f'{endpoint_url}{endpoint}', headers=self.headers)
+        if header is None:
+            r = requests.get(f'{endpoint_url}{endpoint}', headers=self.headers)
+        else:
+            r = requests.get(f'{endpoint_url}{endpoint}', headers=header)
 
         try:  # noqa: SIM105
             data = json.loads(r.text)
@@ -426,9 +432,65 @@ class API_ENDPOINT:
             headers['Authorization'] = player['headers']['Authorization']
             headers['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
             data = self.post2(endpoint=f'/parties/v1/players/joinbycode/{code}', url='pd')
+
+    def change_custom_game_team(self, party_id: str, team1: list, team2: list, headers: dict[str, Any]) -> None:
+        """
+        Change the team of a player in a custom game
+        """
+        def set_team(player: dict, team: str):
+            header = self.headers
+            header['Authorization'] = player['headers']['Authorization']
+            header['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
+            json_data = {
+                "playerToPutOnTeam": player['puuid']
+            }
+            self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamemembership/{team}', url='pd', headers=header, data=json_data)
+        
+        for player in team1:
+            set_team(player, 'TeamSpectate')
+        for player in team2:
+            set_team(player, 'TeamSpectate')
+
+
+        for player in team1:
+            set_team(player, 'TeamOne')
+        for player in team2:
+            set_team(player, 'TeamTwo')
+    
+    def set_custom_game_start(self, party_id: str, headers: dict[str, Any]) -> dict[str, Any]:
+        """
+        Start a custom game
+        """
+        header = self.headers
+        header['Authorization'] = headers['Authorization']
+        header['X-Riot-Entitlements-JWT'] = headers['X-Riot-Entitlements-JWT']
+        json_data = {}
+        data = self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamesettings', url='pd', headers=header, data=json_data)
         print(data)
-
-
+        return data
+    
+    async def set_change_queue(self, party_id: str, headers: dict[str, Any]) -> None:
+        """
+        Change the queue of the party
+        """
+        header = self.headers
+        header['Authorization'] = headers['Authorization']
+        header['X-Riot-Entitlements-JWT'] = headers['X-Riot-Entitlements-JWT']
+        json_data = {
+            "Map": "/Game/Maps/Ascent/Ascent",
+            "Mode": "/Game/GameModes/Bomb/BombGameMode.BombGameMode_C",
+            "UseBots": False,
+            "GamePod": "aresriot.aws-apne2-prod.kr-gp-seoul-1",
+            "GameRules": {
+                "AllowGameModifiers": "false",
+                "PlayOutAllRounds": "true",
+                "SkipMatchHistory": "true",
+                "TournamentMode": "true",
+                "IsOvertimeWinByTwo": "true"
+            }
+        }
+        self.post2(endpoint=f'/parties/v1/parties/{party_id}/makecustomgame', url='pd', headers=header)
+        self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamesettings', url='pd', headers=header, data=json_data)
 
     # local utility functions
 

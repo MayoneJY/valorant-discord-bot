@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Tuple
 
 import discord
 from discord import Interaction, app_commands, ui, User
@@ -306,13 +306,17 @@ class ValorantCog(commands.Cog, name='Valorant'):
             print(e)
             raise ValorantBotError(f'파티 방 생성에 실패했습니다.\n{e}')
             return
-        players = self.party[interaction.channel].invite_room(endpoint.player) # list[puuid]
+        players, team1, team2 = self.party[interaction.channel].invite_room(endpoint.player) # list[puuid]
+
+        print("파티 생성")
+
         try:
             endpoint.set_party_accessibility(partyid)
         except Exception as e:
             print(e)
             raise ValorantBotError(f'파티 공개 파티 전환에 실패했습니다.\n{e}')
             return
+        print("파티 공개 파티 전환")
 
         try:
             code = endpoint.generate_party_code(partyid)
@@ -320,18 +324,60 @@ class ValorantCog(commands.Cog, name='Valorant'):
             print(e)
             raise ValorantBotError(f'파티 코드 생성에 실패했습니다.\n{e}')
             return
+        print("파티 코드 생성")
 
-        msg = await msg.edit(content='팀원 입장..') # type: ignore
-        endpoint.join_party_code(players, code)
+        try:
+            await endpoint.set_change_queue(partyid, endpoint.headers)
+        except Exception as e:
+            print(e)
+            raise ValorantBotError(f'커스텀게임 생성에 실패했습니다.\n{e}')
+            return
+        print("커스텀게임 생성")
 
-        await msg.edit(content='파티 방을 생성했습니다.') # type: ignore
+        try:
+            endpoint.join_party_code(players, code)
+        except Exception as e:
+            print(e)
+            raise ValorantBotError(f'팀원이 파티에 참가하지 못했습니다.\n{e}')
+            return
+        print("팀원이 파티에 참가")
 
-        
+        try:
+            endpoint.change_custom_game_team(partyid, team1, team2 ,endpoint.headers)
+        except Exception as e:
+            print(e)
+            raise ValorantBotError(f'팀 변경에 실패했습니다.\n{e}')
+            return
+        print("팀 변경")
+
+
+
+    
+    @app_commands.command(name="파티_방_팀변경", description='내전 방 정보를 확인합니다.')
+    @app_commands.describe(test="test")
+    @app_commands.guild_only()
+    async def party_room_team_change(self, interaction: Interaction[ValorantBot], test: str) -> None:
+        await interaction.response.defer()
+        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
+        partyid = endpoint.fetch_party_id()
+        endpoint.change_custom_game_team(partyid, endpoint.puuid ,endpoint.headers, test)
+
+
+
+    @app_commands.command(name="파티_방_정보", description='내전 방 정보를 확인합니다.')
+    @app_commands.guild_only()
+    async def party_room_info(self, interaction: Interaction[ValorantBot]) -> None:
+        await interaction.response.defer()
+        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
+        partyid = endpoint.fetch_party_id()
+        # endpoint.fetch_party_custom_game_config(partyid, endpoint.puuid ,endpoint.headers)
+        # endpoint.set_custom_game_start(partyid, endpoint.headers)
+        await endpoint.set_change_queue(partyid, endpoint.headers)
     
 
-    async def get_player_info(self, interaction: Interaction[ValorantBot]) -> None:
+    async def get_player_info(self, interaction: Interaction[ValorantBot]) -> Tuple[str, str]:
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
-        return endpoint.player
+        return endpoint.player, endpoint.puuid
     
     async def get_player_headers(self, interaction: Interaction[ValorantBot]) -> dict[str, str]:
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore

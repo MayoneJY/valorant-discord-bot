@@ -45,13 +45,13 @@ class CustomPartyJoinButtons(ui.View):
             player_id = str(user.global_name)
             rank = await self.valorantCog.get_tier_rank(interaction)
             emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
-            player_info = await self.valorantCog.get_player_info(interaction)
+            player_info, player_puuid = await self.valorantCog.get_player_info(interaction)
             get_player_headers = await self.valorantCog.get_player_headers(interaction)
 
             if rank == -1:
                 return
             
-            if await self.custom_party.add_player(player_id, {"rank": rank, "user": user, "emoji": emoji, "headers": get_player_headers, "username": player_info.split("#")[0], "tag": player_info.split("#")[1]}):
+            if await self.custom_party.add_player(player_id, {"rank": rank, "user": user, "emoji": emoji, "headers": get_player_headers, "username": player_info.split("#")[0], "tag": player_info.split("#")[1], "puuid": player_puuid}):
                 await p_msg.edit(content="참여 완료!") # type: ignore
             else:
                 await p_msg.edit(content="참여 실패..") # type: ignore
