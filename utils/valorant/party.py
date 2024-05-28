@@ -27,6 +27,10 @@ class CustomParty():
         self.message = await self.interaction.followup.send(content="파티에 참여하세요!", embed=GetEmbed.party_list(), view=View.CustomPartyJoinButtons(self.interaction, self, self.valorantCog, self.bot))
 
 
+    async def delete_party_list_message(self):
+        await self.message.delete() # type: ignore
+
+
     async def add_player(self, player_id: str, player: dict) -> bool:
         self.players[player_id] = player
         await self.message.edit(embed=GetEmbed.party_list(self.players)) # type: ignore
@@ -35,7 +39,10 @@ class CustomParty():
     
     async def remove_player(self, player_id: str) -> bool:
         self.players.pop(player_id)
-        await self.message.edit(embed=GetEmbed.party_list(self.players)) # type: ignore
+        if len(self.players) == 0:
+            await self.message.edit(embed=GetEmbed.party_list()) # type: ignore
+        else:
+            await self.message.edit(embed=GetEmbed.party_list(self.players)) # type: ignore
 
         return True
     

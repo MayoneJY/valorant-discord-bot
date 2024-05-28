@@ -60,40 +60,68 @@ class CustomPartyJoinButtons(ui.View):
 
     @ui.button(label='퇴장', style=ButtonStyle.red)
     async def leave(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
-        await interaction.followup.send('파티에 퇴장했어요!')
+        await interaction.response.defer(ephemeral=True)
 
         await self.custom_party.remove_player(str(interaction.user.global_name))
 
+        await interaction.followup.send('파티에 퇴장했어요!', ephemeral=True)
+
 class CustomPartyStartButtons(ui.View):
-    def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot) -> None:
+    def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot,
+                 is_started: bool = False, is_voice_channel_set: bool = False, is_select: bool = True, is_buttons: bool = True) -> None:
         super().__init__(timeout=600)
         self.bot = bot
         self.custom_party = custom_party
         self.selected_channels = []
         
-        self.is_started = False
-        self.is_voice_channel_set = False
+        self.is_started = is_started
+        self.is_voice_channel_set = is_voice_channel_set
 
-        options = [
-            discord.SelectOption(label=channel.name, value=str(channel.id)) for channel in interaction.guild.voice_channels # type: ignore
-            ]
-        self.select = ui.Select(placeholder='음성 채널 선택 (2개):', min_values=2, max_values=2, options=options)
-        self.select.callback = self.select_callback
-        self.add_item(self.select)
+        self.is_select = is_select
+        self.is_buttons = is_buttons
+        self.is_move_button = is_buttons
+        self.is_re_change_button = is_buttons
+        self.is_invite_button = is_buttons
+        print("is_select", self.is_select, "is_buttons", self.is_buttons, "is_move_button", self.is_move_button, "is_re_change_button", self.is_re_change_button, "is_invite_button", self.is_invite_button)
+        self.msg = None
+
+
+        if self.is_select:
+            options = [
+                discord.SelectOption(label=channel.name, value=str(channel.id)) for channel in interaction.guild.voice_channels # type: ignore
+                ]
+            self.select = ui.Select(placeholder='음성 채널 선택 (2개):', min_values=2, max_values=2, options=options)
+            self.select.callback = self.select_callback
+            self.add_item(self.select)
         
-        self.move_button = ui.Button(label="음성 채널 이동", style=discord.ButtonStyle.success, disabled=True)
+        self.move_button = ui.Button(label="음성 채널 이동", style=discord.ButtonStyle.success, disabled=self.is_move_button)
         self.move_button.callback = self.move_users
         self.add_item(self.move_button)
         
-        self.re_change_button = ui.Button(label="원래 통화방으로", style=discord.ButtonStyle.red, disabled=True)
+        self.re_change_button = ui.Button(label="원래 통화방으로", style=discord.ButtonStyle.red, disabled=self.is_re_change_button)
         self.re_change_button.callback = self.re_change
         self.add_item(self.re_change_button)
         
+        self.invite_button = ui.Button(label="초대하기", style=discord.ButtonStyle.primary, disabled=self.is_invite_button)
+        self.invite_button.callback = self.invite
+        self.add_item(self.invite_button)
+        
         self.interaction = interaction
+
+    def init(self, msg) -> None: # type: ignore
+        self.msg = msg
+
 
     async def on_timeout(self) -> None:
         """Called when the view times out"""
-        await self.interaction.edit_original_response(view=self)
+        button = CustomPartyStartButtons(self.interaction, self.custom_party, self.bot, self.is_started, self.is_voice_channel_set, self.is_select, self.is_buttons)
+        msg = await self.interaction.followup.send(ephemeral=True, view=button)
+        button.init(msg)
+        if self.msg:
+            await self.msg.delete() # type: ignore
+        else:
+            await self.interaction.edit_original_response(view=None)
+
 
     @ui.button(label='시작', style=ButtonStyle.green)
     async def start(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
@@ -182,38 +210,62 @@ class CustomPartyStartButtons(ui.View):
 
             await interaction.followup.send(embeds=embeds)
             await self.check(interaction)
+            await self.custom_party.delete_party_list_message()
 
         except Exception as e:
             print(f"CustomPartyStartButtons.start:{e}")
+
 
     @ui.button(label='취소', style=ButtonStyle.red)
     async def cancel(self, interaction: Interaction, button: ui.Button) -> None:
         await interaction.followup.send('Party canceled!')
 
+
     async def check(self, interaction: Interaction[ValorantBot]):
         if self.is_started and self.is_voice_channel_set:
             self.move_button.disabled = False
             self.re_change_button.disabled = False
-            await interaction.response.edit_message(view=self)
+            self.invite_button.disabled = False
+            self.is_buttons = False
+
+            if not interaction.response.is_done():
+                if self.msg:
+                    await self.msg.edit(view=self) # type: ignore
+                else:
+                    await interaction.response.edit_message(view=self)
+
 
     async def select_callback(self, interaction: Interaction[ValorantBot]):
         self.selected_channels = [interaction.guild.get_channel(int(channel_id)) for channel_id in self.select.values] # type: ignore
         self.custom_party.voice_channel = self.selected_channels
+
         if len(self.selected_channels) == 2:
             self.is_voice_channel_set = True
-            await self.check(interaction)
+            self.is_select = False
             self.remove_item(self.select)  # 드롭다운 삭제
-        await interaction.response.edit_message(view=self)
+            await self.check(interaction)
 
+        if not interaction.response.is_done():
+            if self.msg:
+                await self.msg.edit(view=self) # type: ignore
+            else:
+                await interaction.response.edit_message(view=self)
         
+
     async def move_users(self, interaction: Interaction[ValorantBot]):
         await interaction.response.defer()
         await self.custom_party.move_users(interaction)
+
 
     async def re_change(self, interaction: Interaction[ValorantBot]) -> None:
         await interaction.response.defer()
         await self.custom_party.re_change(interaction)
         
+
+    async def invite(self, interaction: Interaction[ValorantBot]) -> None:
+        await interaction.response.defer()
+        await self.custom_party.valorantCog.party_room_create(interaction)
+
 
 class share_button(ui.View):
     def __init__(self, interaction: Interaction, embeds: list[discord.Embed]) -> None:
