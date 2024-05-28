@@ -227,6 +227,8 @@ class CustomPartyStartButtons(ui.View):
         
         await self.custom_party.delete_party_list_message()
 
+        self.custom_party.delete()
+
     async def check(self, interaction: Interaction[ValorantBot]):
         if self.is_started and self.is_voice_channel_set:
             self.move_button.disabled = False

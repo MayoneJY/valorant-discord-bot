@@ -24,8 +24,10 @@ class CustomParty():
     async def initialize(self):
         await self.interaction.followup.send(content="모든 참여자가 참가했을 때, 시작 버튼을 눌러주세요.", ephemeral=True, view=View.CustomPartyStartButtons(self.interaction ,self, self.bot))
         
-        self.message = await self.interaction.followup.send(content="파티에 참여하세요!", embed=GetEmbed.party_list(), view=View.CustomPartyJoinButtons(self.interaction, self, self.valorantCog, self.bot))
+        self.message = await self.interaction.followup.send(content="파티에 참여하세요!", embed=GetEmbed.party_list(), view=View.CustomPartyJoinButtons(self.interaction, self, self.valorantCog, self.bot)) # type: ignore
 
+    def delete(self):
+        self.valorantCog.party[self.interaction.channel] = None
 
     async def delete_party_list_message(self):
         await self.message.delete() # type: ignore
