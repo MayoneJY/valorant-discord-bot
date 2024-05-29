@@ -301,7 +301,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         try:
             partyid = endpoint.fetch_party_id()
             if not partyid:
-                raise ValorantBotError(f'{interaction.user.mention}님이 발로란트에 로그인되어 있지 않습니다.')
+                raise ValorantBotError(f'{interaction.user.mention}님이 `발로란트`에 로그인되어 있지 않습니다.')
                 return
         except Exception as e:
             print(e)
@@ -338,7 +338,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         print("커스텀게임 생성")
 
         try:
-            endpoint.join_party_code(players, code)
+            await endpoint.join_party_code(interaction, players, code)
         except Exception as e:
             print(e)
             raise ValorantBotError(f'팀원이 파티에 참가하지 못했습니다.\n{e}')

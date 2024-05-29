@@ -89,9 +89,9 @@ class CustomParty():
         for player in self.players:
             if 'username' in self.players[player]:
                 if user != self.players[player]['username'] + "#" + self.players[player]['tag']:
-                    players.append({"headers": self.players[player]['headers']})
+                    players.append({"headers": self.players[player]['headers'], "user": self.players[player]['user']})
             else:
-                await interaction.followup.send(f'{self.players[player]["user"].mention}님은 내전봇에 로그인되어 있지 않아 초대에서 제외되었습니다.')
+                await interaction.followup.send(f'{self.players[player]["user"].mention}님은 `내전봇`에 로그인되어 있지 않아 초대에서 제외되었습니다.')
         for member in self.best_team1:
             best_team1.append(self.players[member])
         for member in self.best_team2:

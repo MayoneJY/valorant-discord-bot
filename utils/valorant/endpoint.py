@@ -399,8 +399,7 @@ class API_ENDPOINT:
         """
         Set party accessibility
         """
-        data = self.post2(endpoint=f'/parties/v1/parties/{party_id}/accessibility', url='pd', data={"accessibility": "OPEN"})
-        print(data)
+        self.post2(endpoint=f'/parties/v1/parties/{party_id}/accessibility', url='pd', data={"accessibility": "OPEN"})
 
 
     def generate_party_code(self, party_id: str) -> str:
@@ -420,7 +419,7 @@ class API_ENDPOINT:
             headers['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
             self.post2(endpoint=f'/parties/v1/parties/{party_id}/request', url='pd', headers=headers)
 
-    def join_party_code(self, players: list, code: str) -> None:
+    async def join_party_code(self, interaction:Any, players: list, code: str) -> None:
         """
         Join a party using a code
         """
@@ -429,6 +428,11 @@ class API_ENDPOINT:
             headers['Authorization'] = player['headers']['Authorization']
             headers['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
             data = self.post2(endpoint=f'/parties/v1/players/joinbycode/{code}', url='pd')
+            if 'errorCode' in data:
+                if data['errorCode'] == 'PLAYER_DOES_NOT_EXIST':
+                    await interaction.followup.send(f'{player["user"].mention}님은 `발로란트`에 로그인되어 있지 않아 초대에서 제외되었습니다.')
+
+
 
     def change_custom_game_team(self, party_id: str, team1: list, team2: list, headers: dict[str, Any]) -> None:
         """
