@@ -296,6 +296,9 @@ class ValorantCog(commands.Cog, name='Valorant'):
             raise ValorantBotError('팀을 나누지 않았습니다.')
             return
         
+        if interaction.user.name not in self.party[interaction.channel].players:
+            raise ValorantBotError(f'{interaction.user.mention}님이 파티에 참여하지 않아 방을 생성할 수 없습니다.')
+
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
 
         try:
