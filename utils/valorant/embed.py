@@ -279,6 +279,6 @@ class GetEmbed:
         embed.description = ''
         for player, data in players.items():
             
-            embed.description = f'{embed.description}\n{player} - {data["emoji"]}'
+            embed.description = f'{embed.description}\n{data["displayName"]} - {data["emoji"]}'
 
         return embed

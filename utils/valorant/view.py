@@ -42,7 +42,7 @@ class CustomPartyJoinButtons(ui.View):
         p_msg = await interaction.followup.send('파티 입장중..' , ephemeral=True)
         try:
             user = interaction.user
-            player_id = str(user.global_name)
+            player_id = str(user.name)
             rank = await self.valorantCog.get_tier_rank(interaction)
             emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
             player_info, player_puuid = await self.valorantCog.get_player_info(interaction)
@@ -51,7 +51,7 @@ class CustomPartyJoinButtons(ui.View):
             if rank == -1:
                 return
             
-            if await self.custom_party.add_player(player_id, {"rank": rank, "user": user, "emoji": emoji, "headers": get_player_headers, "username": player_info.split("#")[0], "tag": player_info.split("#")[1], "puuid": player_puuid}):
+            if await self.custom_party.add_player(player_id, {"displayName": str(user.global_name), "rank": rank, "user": user, "emoji": emoji, "headers": get_player_headers, "username": player_info.split("#")[0], "tag": player_info.split("#")[1], "puuid": player_puuid}):
                 await p_msg.edit(content="참여 완료!") # type: ignore
             else:
                 await p_msg.edit(content="참여 실패..") # type: ignore
@@ -62,7 +62,7 @@ class CustomPartyJoinButtons(ui.View):
     async def leave(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
         await interaction.response.defer(ephemeral=True)
 
-        await self.custom_party.remove_player(str(interaction.user.global_name))
+        await self.custom_party.remove_player(str(interaction.user.name))
 
         await interaction.followup.send('파티에 퇴장했어요!', ephemeral=True)
 
@@ -189,12 +189,12 @@ class CustomPartyStartButtons(ui.View):
             modifed_best_team1 = []
             for member in best_team1:
                 await self.custom_party.players[member]["user"].add_roles(role1)
-                modifed_best_team1.append(f"{member} - {self.custom_party.players[member]['emoji']}")
+                modifed_best_team1.append(f"{self.custom_party.players[member]['displayName']} - {self.custom_party.players[member]['emoji']}")
 
             modifed_best_team2 = []
             for member in best_team2:
                 await self.custom_party.players[member]["user"].add_roles(role2)
-                modifed_best_team2.append(f"{member} - {self.custom_party.players[member]['emoji']}")
+                modifed_best_team2.append(f"{self.custom_party.players[member]['displayName']} - {self.custom_party.players[member]['emoji']}")
             await msg.delete() # type: ignore
             embeds = []
             embeds.append(discord.Embed(title="내전 팀 분배", description=f"팀 분배가 완료되었습니다.\n`{count}`번의 경우의 수로 밸런스를 맞췄습니다.", color=0x00ff00))

@@ -232,12 +232,12 @@ class ValorantCog(commands.Cog, name='Valorant'):
             return
 
         user = interaction.user
-        player_id = str(user.global_name)
+        player_id = str(user.name)
         rank = rank_list.index(tier)
         emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
         if rank == -1:
             return
-        if await self.party[interaction.channel].add_player(player_id, {"rank": rank, "user": user, "val_id": "test_val_id", "emoji": emoji}):
+        if await self.party[interaction.channel].add_player(player_id, {"displayName": str(user.global_name), "rank": rank, "user": user, "val_id": "test_val_id", "emoji": emoji}):
             await interaction.followup.send('Joined the party!', ephemeral=True)
         else:
             await interaction.followup.send('Failed to join the party.', ephemeral=True)
@@ -300,13 +300,14 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         try:
             partyid = endpoint.fetch_party_id()
-
-            await interaction.followup.send(f'파티 방을 생성합니다. {partyid}')
+            if not partyid:
+                raise ValorantBotError(f'{interaction.user.mention}님이 발로란트에 로그인되어 있지 않습니다.')
+                return
         except Exception as e:
             print(e)
             raise ValorantBotError(f'파티 방 생성에 실패했습니다.\n{e}')
             return
-        players, team1, team2 = self.party[interaction.channel].invite_room(endpoint.player) # list[puuid]
+        players, team1, team2 = await self.party[interaction.channel].invite_room(interaction, endpoint.player) # list[puuid]
 
         print("파티 생성")
 
@@ -320,6 +321,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         try:
             code = endpoint.generate_party_code(partyid)
+            if code:
+                await interaction.followup.send(f'파티 코드: {code}')
         except Exception as e:
             print(e)
             raise ValorantBotError(f'파티 코드 생성에 실패했습니다.\n{e}')
@@ -353,26 +356,26 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
 
     
-    @app_commands.command(name="파티_방_팀변경", description='내전 방 정보를 확인합니다.')
-    @app_commands.describe(test="test")
-    @app_commands.guild_only()
-    async def party_room_team_change(self, interaction: Interaction[ValorantBot], test: str) -> None:
-        await interaction.response.defer()
-        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
-        partyid = endpoint.fetch_party_id()
-        endpoint.change_custom_game_team(partyid, endpoint.puuid ,endpoint.headers, test)
+    # @app_commands.command(name="파티_방_팀변경", description='내전 방 정보를 확인합니다.')
+    # @app_commands.describe(test="test")
+    # @app_commands.guild_only()
+    # async def party_room_team_change(self, interaction: Interaction[ValorantBot], test: str) -> None:
+    #     await interaction.response.defer()
+    #     endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
+    #     partyid = endpoint.fetch_party_id()
+    #     endpoint.change_custom_game_team(partyid, endpoint.puuid ,endpoint.headers, test)
 
 
 
-    @app_commands.command(name="파티_방_정보", description='내전 방 정보를 확인합니다.')
-    @app_commands.guild_only()
-    async def party_room_info(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer()
-        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
-        partyid = endpoint.fetch_party_id()
-        # endpoint.fetch_party_custom_game_config(partyid, endpoint.puuid ,endpoint.headers)
-        # endpoint.set_custom_game_start(partyid, endpoint.headers)
-        await endpoint.set_change_queue(partyid, endpoint.headers)
+    # @app_commands.command(name="파티_방_정보", description='내전 방 정보를 확인합니다.')
+    # @app_commands.guild_only()
+    # async def party_room_info(self, interaction: Interaction[ValorantBot]) -> None:
+    #     await interaction.response.defer()
+    #     endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
+    #     partyid = endpoint.fetch_party_id()
+    #     # endpoint.fetch_party_custom_game_config(partyid, endpoint.puuid ,endpoint.headers)
+    #     # endpoint.set_custom_game_start(partyid, endpoint.headers)
+    #     await endpoint.set_change_queue(partyid, endpoint.headers)
     
 
     async def get_player_info(self, interaction: Interaction[ValorantBot]) -> Tuple[str, str]:

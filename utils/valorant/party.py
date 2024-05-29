@@ -82,13 +82,16 @@ class CustomParty():
             print(e)
             await interaction.followup.send('음성 채널 이동 실패!')
 
-    def invite_room(self, user:str) -> tuple[list, list, list]:
+    async def invite_room(self, interaction:Interaction[ValorantBot], user:str) -> tuple[list, list, list]:
         players = []
         best_team1 = []
         best_team2 = []
         for player in self.players:
-            if user != self.players[player]['username'] + "#" + self.players[player]['tag']:
-                players.append({"headers": self.players[player]['headers']})
+            if 'username' in self.players[player]:
+                if user != self.players[player]['username'] + "#" + self.players[player]['tag']:
+                    players.append({"headers": self.players[player]['headers']})
+            else:
+                await interaction.followup.send(f'{self.players[player]["user"].mention}님은 내전봇에 로그인되어 있지 않아 초대에서 제외되었습니다.')
         for member in self.best_team1:
             best_team1.append(self.players[member])
         for member in self.best_team2:

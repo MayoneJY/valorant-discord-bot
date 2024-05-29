@@ -362,19 +362,16 @@ class API_ENDPOINT:
     
     # party endpoints
 
-    def fetch_party_id(self) -> str:
+    def fetch_party_id(self) -> str | None:
         """
         Get the party ID of the player
         """
-        print(self.puuid)
-
         r = requests.get(f'https://glz-kr-1.kr.a.pvp.net/parties/v1/players/{self.puuid}?aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1=186&aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-awsedge-1=122&aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-1=147&aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-awsedge-1=151&aresriot.aws-rclusterprod-aps1-1.ap-gp-mumbai-awsedge-1=22&aresriot.aws-rclusterprod-apse1-1.ap-gp-singapore-1=77&aresriot.aws-rclusterprod-apse1-1.ap-gp-singapore-awsedge-1=79&aresriot.aws-rclusterprod-apse2-1.ap-gp-sydney-1=258&aresriot.aws-rclusterprod-apse2-1.ap-gp-sydney-awsedge-1=170&preferredgamepods=aresriot.aws-rclusterprod-aps1-1.ap-gp-mumbai-awsedge-1', headers=self.headers)
 
-        try:  # noqa: SIM105
-            data = json.loads(r.text)
-        except Exception:
-            pass
-
+        data = json.loads(r.text)
+        if 'errorCode' in data:
+            if data['errorCode'] == 'PLAYER_DOES_NOT_EXIST':
+                return None
         # if 'httpStatus' not in data:  # type: ignore
         #     return data  # type: ignore
         
@@ -438,14 +435,15 @@ class API_ENDPOINT:
         Change the team of a player in a custom game
         """
         def set_team(player: dict, team: str):
-            header = self.headers
-            header['Authorization'] = player['headers']['Authorization']
-            header['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
-            json_data = {
-                "playerToPutOnTeam": player['puuid']
-            }
-            self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamemembership/{team}', url='pd', headers=header, data=json_data)
-        
+            if 'headers' in player:
+                header = self.headers
+                header['Authorization'] = player['headers']['Authorization']
+                header['X-Riot-Entitlements-JWT'] = player['headers']['X-Riot-Entitlements-JWT']
+                json_data = {
+                    "playerToPutOnTeam": player['puuid']
+                }
+                self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamemembership/{team}', url='pd', headers=header, data=json_data)
+                
         for player in team1:
             set_team(player, 'TeamSpectate')
         for player in team2:
