@@ -39,7 +39,7 @@ class DATABASE:
         """Insert cache"""
         JSON.save('cache', data)
 
-    async def is_login(self, user_id: int, response: dict[str, Any]) -> dict[str, Any] | bool | None:
+    async def is_login(self, user_id: int, response: dict[str, Any], check: bool = False) -> dict[str, Any] | bool | None:
         """Check if user is logged in"""
 
         db = self.read_db()
@@ -48,7 +48,10 @@ class DATABASE:
         login = False
 
         if data is None:
-            raise DatabaseError(response.get('NOT_LOGIN'))
+            if not check:
+                raise DatabaseError(response.get('NOT_LOGIN'))
+            else:
+                return False
         elif login:
             return False
         return data

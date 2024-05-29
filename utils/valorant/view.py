@@ -24,6 +24,98 @@ if TYPE_CHECKING:
     from .db import DATABASE
 
 
+class ValLoginModal(ui.Modal):
+    def __init__(self, msg, valorantCog): # type: ignore
+        super().__init__(title="발로란트 로그인", timeout=None)
+        self.valorantCog = valorantCog
+        self.msg = msg
+        self.add_item(ui.TextInput(label='아이디', placeholder='아이디를 입력하세요', style=TextStyle.short))
+        self.add_item(ui.TextInput(label='비밀번호', placeholder='비밀번호를 입력하세요', style=TextStyle.short))
+    
+    async def on_submit(self, interaction: Interaction[ValorantBot]) -> None:
+        try:
+            await self.valorantCog.login2(interaction, self.children[0].value, self.children[1].value) # type: ignore
+
+            await self.delete()
+
+            await self.valorantCog.party[interaction.channel].join_view.join2(interaction) # type: ignore
+
+        except Exception as e:
+            print(f"ValLoginModal.on_submit:{e}")
+
+    async def delete(self) -> None:
+        await self.msg.delete()
+
+
+class CookiesLoginModal(ui.Modal):
+    def __init__(self, msg, valorantCog): # type: ignore
+        super().__init__(title="쿠키 로그인", timeout=None)
+        self.valorantCog = valorantCog
+        self.msg = msg
+        self.add_item(ui.TextInput(label='쿠키', placeholder='쿠키를 입력하세요', style=TextStyle.short))
+
+    async def on_submit(self, interaction: Interaction[ValorantBot]) -> None:
+        try:
+            await self.valorantCog.cookies2(interaction, self.children[0].value) # type: ignore
+
+            await self.delete()
+
+            await self.valorantCog.party[interaction.channel].join_view.join2(interaction) # type: ignore
+
+        except Exception as e:
+            print(f"CookiesLoginModal.on_submit:{e}")
+
+    async def delete(self) -> None:
+        await self.msg.delete()
+
+
+class NoLoginModal(ui.Modal):
+    def __init__(self, msg, valorantCog): # type: ignore
+        super().__init__(title="비로그인(최소 기능)", timeout=None)
+        self.valorantCog = valorantCog
+        self.msg = msg
+        self.add_item(ui.TextInput(label='티어', placeholder="티어를 입력하세요.(예: '플3', '언랭', '레디')", style=TextStyle.short))
+
+    async def on_submit(self, interaction: Interaction[ValorantBot]) -> None:
+        try:
+            await self.delete()
+
+            await self.valorantCog.party_join2(interaction, self.children[0].value) # type: ignore
+
+        except Exception as e:
+            print(f"NoLoginModal.on_submit:{e}")
+
+    async def delete(self) -> None:
+        await self.msg.delete()
+
+
+class LoginView(ui.View):
+    def __init__(self, valorantCog) -> None: # type: ignore
+        super().__init__(timeout=600)
+        self.valorantCog = valorantCog
+        options=[
+            discord.SelectOption(label='아이디/비밀번호', value='id_pw'),
+            discord.SelectOption(label='쿠키', value='cookie'),
+            discord.SelectOption(label='비로그인(최소 기능)', value='no_login')
+        ]
+        self.select = ui.Select(placeholder='로그인 방법 선택', min_values=1, max_values=1, options=options)
+        self.select.callback = self.select_callback
+        self.add_item(self.select)
+
+    def init(self, msg) -> None: # type: ignore
+        self.msg = msg
+
+    async def select_callback(self, interaction: Interaction[ValorantBot]) -> None:
+        try:
+            if self.select.values[0] == 'id_pw':
+                await interaction.response.send_modal(ValLoginModal(self.msg, self.valorantCog))
+            elif self.select.values[0] == 'cookie':
+                await interaction.response.send_modal(CookiesLoginModal(self.msg, self.valorantCog))
+            elif self.select.values[0] == 'no_login':
+                await interaction.response.send_modal(NoLoginModal(self.msg, self.valorantCog))
+        except Exception as e:
+            print(f"LoginView.login:{e}")
+
 class CustomPartyJoinButtons(ui.View):
     def __init__(self, interaction:Interaction[ValorantBot], custom_party: CustomParty, valorantCog, bot: ValorantBot) -> None: # type: ignore
         super().__init__(timeout=600)
@@ -37,19 +129,39 @@ class CustomPartyJoinButtons(ui.View):
         await self.interaction.edit_original_response(view=self)
 
     @ui.button(label='참여', style=ButtonStyle.green)
-    async def join(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
+    async def join(self, interaction: Interaction[ValorantBot], button: ui.Button | None = None) -> None:
         await interaction.response.defer(ephemeral=True)
         p_msg = await interaction.followup.send('파티 입장중..' , ephemeral=True)
         try:
             user = interaction.user
             player_id = str(user.name)
             rank = await self.valorantCog.get_tier_rank(interaction)
+            if rank == -1:
+                return
             emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
             player_info, player_puuid = await self.valorantCog.get_player_info(interaction)
             get_player_headers = await self.valorantCog.get_player_headers(interaction)
 
+            
+            if await self.custom_party.add_player(player_id, {"displayName": str(user.global_name), "rank": rank, "user": user, "emoji": emoji, "headers": get_player_headers, "username": player_info.split("#")[0], "tag": player_info.split("#")[1], "puuid": player_puuid}):
+                await p_msg.edit(content="참여 완료!") # type: ignore
+            else:
+                await p_msg.edit(content="참여 실패..") # type: ignore
+        except Exception as e:
+            await interaction.followup.send(f'참여 실패.. \n {e}')
+
+    async def join2(self, interaction: Interaction[ValorantBot]) -> None:
+        p_msg = await interaction.followup.send('파티 입장중..' , ephemeral=True)
+        try:
+            user = interaction.user
+            player_id = str(user.name)
+            rank = await self.valorantCog.get_tier_rank(interaction)
             if rank == -1:
                 return
+            emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
+            player_info, player_puuid = await self.valorantCog.get_player_info(interaction)
+            get_player_headers = await self.valorantCog.get_player_headers(interaction)
+
             
             if await self.custom_party.add_player(player_id, {"displayName": str(user.global_name), "rank": rank, "user": user, "emoji": emoji, "headers": get_player_headers, "username": player_info.split("#")[0], "tag": player_info.split("#")[1], "puuid": player_puuid}):
                 await p_msg.edit(content="참여 완료!") # type: ignore

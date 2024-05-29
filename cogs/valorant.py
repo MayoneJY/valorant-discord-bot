@@ -18,6 +18,7 @@ from utils.valorant.endpoint import API_ENDPOINT
 from utils.valorant.local import ResponseLanguage
 from utils.valorant.resources import setup_emoji
 from utils.valorant.party import CustomParty
+from utils.valorant.view import LoginView
 import json, random
 
 VLR_locale = ValorantTranslator()
@@ -97,7 +98,33 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.describe(username='Input username', password='Input password')
     # @dynamic_cooldown(cooldown_5s)
     async def login(self, interaction: Interaction[ValorantBot], username: str, password: str) -> None:
+        print("login")
         response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+
+        user_id = interaction.user.id
+        auth = self.db.auth
+        auth.locale_code = interaction.locale  # type: ignore
+        authenticate = await auth.authenticate(username, password)
+
+        if authenticate['auth'] == 'response':  # type: ignore
+            await interaction.response.defer(ephemeral=True)
+            login = await self.db.login(user_id, authenticate, interaction.locale)  # type: ignore
+
+            if login['auth']:  # type: ignore
+                embed = Embed(f"{response.get('SUCCESS')} **{login['player']}!**")  # type: ignore
+                return await interaction.followup.send(embed=embed, ephemeral=True)
+
+            raise ValorantBotError(f"{response.get('FAILED')}")
+
+        elif authenticate['auth'] == '2fa':  # type: ignore
+            cookies = authenticate['cookie']  # type: ignore
+            message = authenticate['message']  # type: ignore
+            label = authenticate['label']  # type: ignore
+            modal = View.TwoFA_UI(interaction, self.db, cookies, message, label, response)
+            await interaction.response.send_modal(modal)
+    
+    async def login2(self, interaction: Interaction[ValorantBot], username: str, password: str) -> None:
+        response = ResponseLanguage("login", interaction.locale)  # type: ignore
 
         user_id = interaction.user.id
         auth = self.db.auth
@@ -230,6 +257,20 @@ class ValorantCog(commands.Cog, name='Valorant'):
         if interaction.channel not in self.party:
             await interaction.followup.send('파티가 생성되지 않았습니다.', ephemeral=True)
             return
+
+        user = interaction.user
+        player_id = str(user.name)
+        rank = rank_list.index(tier)
+        emoji = discord.utils.get(self.bot.emojis, name=f'competitivetiers{rank}') # type: ignore
+        if rank == -1:
+            return
+        if await self.party[interaction.channel].add_player(player_id, {"displayName": str(user.global_name), "rank": rank, "user": user, "val_id": "test_val_id", "emoji": emoji}):
+            await interaction.followup.send('Joined the party!', ephemeral=True)
+        else:
+            await interaction.followup.send('Failed to join the party.', ephemeral=True)
+
+    async def party_join2(self, interaction: Interaction[ValorantBot], tier: str) -> None:
+        await interaction.response.defer(ephemeral=True)
 
         user = interaction.user
         player_id = str(user.name)
@@ -427,10 +468,13 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await setup_emoji(self.bot, interaction.guild, interaction.locale)  # type: ignore
 
         # get endpoint
-        try:
+        if await self.db.is_login(interaction.user.id, interaction.locale, True): # type: ignore
             endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
-        except Exception as e:
-            await interaction.followup.send(embed=Embed(str(e)), ephemeral=True)
+        else:
+            # await interaction.followup.send(embed=Embed(str(e)), ephemeral=True)
+            view = LoginView(self)
+            msg = await interaction.followup.send(content="`비로그인시 자동 입장기능 비활성화.`", view=view, ephemeral=True)
+            view.init(msg)
             return -1
 
         # data
@@ -586,6 +630,26 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         # language
         response = ResponseLanguage(interaction.command.name, interaction.locale.value)  # type: ignore
+
+        login = await self.db.cookie_login(interaction.user.id, cookie, interaction.locale.value)
+
+        if login['auth']:  # type: ignore
+            embed = Embed(f"{response.get('SUCCESS')} **{login['player']}!**")  # type: ignore
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        view = ui.View()
+        view.add_item(ui.Button(label='Tutorial', emoji='🔗', url='https://youtu.be/cFMNHEHEp2A'))
+        await interaction.followup.send(f"{response.get('FAILURE')}", view=view, ephemeral=True)
+
+        
+    async def cookies2(self, interaction: Interaction[ValorantBot], cookie: str) -> None:
+        """Login to your account with a cookie"""
+
+        await interaction.response.defer(ephemeral=True)
+
+        # language
+        response = ResponseLanguage("cookies", interaction.locale.value)  # type: ignore
 
         login = await self.db.cookie_login(interaction.user.id, cookie, interaction.locale.value)
 
