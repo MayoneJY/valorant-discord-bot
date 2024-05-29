@@ -18,7 +18,7 @@ from utils.valorant.endpoint import API_ENDPOINT
 from utils.valorant.local import ResponseLanguage
 from utils.valorant.resources import setup_emoji
 from utils.valorant.party import CustomParty
-import json
+import json, random
 
 VLR_locale = ValorantTranslator()
 
@@ -328,9 +328,18 @@ class ValorantCog(commands.Cog, name='Valorant'):
             raise ValorantBotError(f'파티 코드 생성에 실패했습니다.\n{e}')
             return
         print("파티 코드 생성")
+        try:
+            data = endpoint.fetch_custom_game_map()
+
+            map = random.choice(data) # type: ignore
+        except Exception as e:
+            map = None
+            print(e)
+            raise ValorantBotError(f'맵 추천에 실패했습니다.\n{e}')
 
         try:
-            await endpoint.set_change_queue(partyid, endpoint.headers)
+            await endpoint.set_change_queue(partyid, endpoint.headers, map['url'])
+            await interaction.followup.send(f'맵: {map["name"]}')
         except Exception as e:
             print(e)
             raise ValorantBotError(f'커스텀게임 생성에 실패했습니다.\n{e}')
@@ -354,7 +363,22 @@ class ValorantCog(commands.Cog, name='Valorant'):
         print("팀 변경")
 
 
+    @app_commands.command(name="맵_추천", description='내전 맵을 추천합니다.')
+    @app_commands.guild_only()
+    async def party_map_recommend(self, interaction: Interaction[ValorantBot]) -> None:
+        await interaction.response.defer()
 
+        endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
+        
+        data = endpoint.fetch_custom_game_map()
+
+        result = random.choice(data) # type: ignore
+        
+
+        if data:
+            await interaction.followup.send(f'추천 맵: {result["name"]}')
+        else:
+            await interaction.followup.send('맵 추천에 실패했습니다.')
     
     # @app_commands.command(name="파티_방_팀변경", description='내전 방 정보를 확인합니다.')
     # @app_commands.describe(test="test")

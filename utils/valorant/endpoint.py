@@ -471,15 +471,16 @@ class API_ENDPOINT:
         print(data)
         return data
     
-    async def set_change_queue(self, party_id: str, headers: dict[str, Any]) -> None:
+    async def set_change_queue(self, party_id: str, headers: dict[str, Any], map: str = "/Game/Maps/Ascent/Ascent") -> None:
         """
         Change the queue of the party
         """
         header = self.headers
         header['Authorization'] = headers['Authorization']
         header['X-Riot-Entitlements-JWT'] = headers['X-Riot-Entitlements-JWT']
+        
         json_data = {
-            "Map": "/Game/Maps/Ascent/Ascent",
+            "Map": map,
             "Mode": "/Game/GameModes/Bomb/BombGameMode.BombGameMode_C",
             "UseBots": False,
             "GamePod": "aresriot.aws-apne2-prod.kr-gp-seoul-1",
@@ -493,6 +494,24 @@ class API_ENDPOINT:
         }
         self.post2(endpoint=f'/parties/v1/parties/{party_id}/makecustomgame', url='pd', headers=header)
         self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamesettings', url='pd', headers=header, data=json_data)
+
+    def fetch_custom_game_map(self) -> list[dict[str, str]] | None:
+        """
+        Get the map for a custom game
+        """
+        r = requests.get('https://valorant-api.com/v1/maps')
+        
+        data = json.loads(r.text)
+
+        result = []
+        if 'status' in data and data['status'] == 200:
+            datas = data['data']
+            for data in datas:
+                if data['mapUrl'].count(data['mapUrl'].split('/')[3]) == 2:
+                    result.append({"url": data['mapUrl'], "name": data['displayName']})
+            return result
+        else:
+            return None
 
     # local utility functions
 
