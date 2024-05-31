@@ -185,7 +185,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         # data
         data = endpoint.store_fetch_storefront()
         embeds = GetEmbed.store(endpoint.player, data, response, self.bot)
-        await interaction.followup.send(embeds=embeds)
+        await interaction.followup.send(embeds=embeds, view=View.share_button(interaction, embeds))
 
     @app_commands.command(description='View your remaining Valorant and Riot Points (VP/RP)')
     @app_commands.guild_only()
@@ -212,7 +212,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         data = endpoint.store_fetch_wallet()
         embed = GetEmbed.point(endpoint.player, data, response, self.bot)
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
     @app_commands.command(name="파티_생성", description='View your player profile')
     @app_commands.guild_only()
@@ -511,7 +511,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         data = endpoint.fetch_contracts()
         embed = GetEmbed.mission(endpoint.player, data, response)
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
     @app_commands.command(description='Show skin offers on the nightmarket')
     @app_commands.guild_only()
@@ -543,7 +543,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         data = endpoint.store_fetch_storefront()
         embeds = GetEmbed.nightmarket(endpoint.player, data, self.bot, response)
 
-        await interaction.followup.send(embeds=embeds)  # type: ignore
+        await interaction.followup.send(embeds=embeds, view=View.share_button(interaction, embeds))  # type: ignore
 
     @app_commands.command(description='View your battlepass current tier')
     # @dynamic_cooldown(cooldown_5s)
@@ -566,7 +566,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         embed = GetEmbed.battlepass(endpoint.player, data, season, response)
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
     # inspired by https://github.com/giorgi-o
     @app_commands.command(description='inspect a specific bundle')
