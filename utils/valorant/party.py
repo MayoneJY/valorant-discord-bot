@@ -73,10 +73,11 @@ class CustomParty():
 
     async def re_change(self, interaction: Interaction) -> None:
         try:
-            for member in self.best_team2:
-                user = self.players[member]['user']
+            role_members2 = [member for member in interaction.guild.members if role2 in member.roles] # type: ignore
+            for member in role_members2:
                 # 음성채널 이동
-                await user.move_to(self.voice_channel[0])
+                if member.voice:
+                    await member.move_to(self.voice_channel[0])
             
             await interaction.followup.send('음성 채널 이동 완료!')
         except Exception as e:
