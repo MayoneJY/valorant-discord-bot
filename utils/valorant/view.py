@@ -304,12 +304,20 @@ class CustomPartyStartButtons(ui.View):
             modifed_best_team1 = []
             for member in best_team1:
                 await self.custom_party.players[member]["user"].add_roles(role1)
-                modifed_best_team1.append(f"{self.custom_party.players[member]['displayName']} - {self.custom_party.players[member]['emoji']}")
+                value = f"{self.custom_party.players[member]['displayName']} - {self.custom_party.players[member]['emoji']}"
+                if 'headers' not in self.custom_party.players[member]:
+                    value += ' - 비로그인'
+                
+                modifed_best_team1.append(value)
 
             modifed_best_team2 = []
             for member in best_team2:
                 await self.custom_party.players[member]["user"].add_roles(role2)
-                modifed_best_team2.append(f"{self.custom_party.players[member]['displayName']} - {self.custom_party.players[member]['emoji']}")
+                value = f"{self.custom_party.players[member]['displayName']} - {self.custom_party.players[member]['emoji']}"
+                if 'headers' not in self.custom_party.players[member]:
+                    value += ' - 비로그인'
+
+                modifed_best_team2.append(value)
             await msg.delete() # type: ignore
             embeds = []
             embeds.append(discord.Embed(title="내전 팀 분배", description=f"팀 분배가 완료되었습니다.\n`{count}`번의 경우의 수로 밸런스를 맞췄습니다.", color=0x00ff00))
