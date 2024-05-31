@@ -579,8 +579,12 @@ class TwoFA_UI(ui.Modal, title='Two-factor authentication'):
         self.response = response
         self.two2fa.placeholder = message
         self.two2fa.label = label
+    
+        self.add_item(ui.TextInput(label='2차 인증 코드 얻는 방법', 
+                     default='https://authenticate.riotgames.com/ 에서 로그인하면 이메일로 2차 인증 코드를 받을 수 있습니다.', 
+                     style=TextStyle.long, required=False))
 
-    two2fa = ui.TextInput(label='Input 2FA Code', max_length=6, style=TextStyle.short)
+    two2fa = ui.TextInput(label='Input 2FA Code', max_length=6, style=TextStyle.long)
 
     async def on_submit(self, interaction: Interaction) -> None:
         """Called when the user submits the modal."""
