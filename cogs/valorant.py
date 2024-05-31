@@ -18,7 +18,7 @@ from utils.valorant.endpoint import API_ENDPOINT
 from utils.valorant.local import ResponseLanguage
 from utils.valorant.resources import setup_emoji
 from utils.valorant.party import CustomParty
-from utils.valorant.view import LoginView
+from utils.valorant.view import LoginView, TwoFA_Button_UI
 import json, random
 
 VLR_locale = ValorantTranslator()
@@ -137,11 +137,17 @@ class ValorantCog(commands.Cog, name='Valorant'):
             raise ValorantBotError(f"{response.get('FAILED')}")
 
         elif authenticate['auth'] == '2fa':  # type: ignore
+            await interaction.response.defer(ephemeral=True)
             cookies = authenticate['cookie']  # type: ignore
             message = authenticate['message']  # type: ignore
             label = authenticate['label']  # type: ignore
-            modal = View.TwoFA_UI(interaction, self.db, cookies, message, label, response)
-            return await interaction.response.send_modal(modal)
+
+            if hasattr(interaction.command, 'name'): # type: ignore
+                modal = View.TwoFA_UI(interaction, self.db, cookies, message, label, response)
+                return await interaction.response.send_modal(modal)
+            else:
+                await interaction.followup.send(content="2차 인증 코드를 아래 버튼을 클릭하여 입력해주세요.", view=View.TwoFA_Button_UI(self.db, cookies, message, label, response))
+                
 
     @app_commands.command(description='Logout and Delete your account from database')
     # @dynamic_cooldown(cooldown_5s)

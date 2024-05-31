@@ -25,6 +25,20 @@ if TYPE_CHECKING:
     from .db import DATABASE
 
 
+class TwoFA_Button_UI(ui.View):
+    def __init__ (self, db, cookies, message, label, response): # type: ignore
+        super().__init__(timeout=600)
+        self.db = db
+        self.cookies = cookies
+        self.message = message
+        self.label = label
+        self.response = response
+
+
+    @ui.button(label='2차 인증 코드 입력', style=ButtonStyle.primary)
+    async def button_callback(self, interaction: Interaction, button: ui.Button):
+        await interaction.response.send_modal(TwoFA_UI(interaction, self.db, self.cookies, self.message, self.label, self.response))
+
 class LoginModal(ui.Modal):
     def __init__(self, msg, valorantCog, login, command_name = None): # type: ignore
         self.valorantCog = valorantCog
@@ -594,7 +608,7 @@ class TwoFA_UI(ui.Modal, title='Two-factor authentication'):
                 if login['auth']:  # type: ignore
                     return await send_embed(f"{self.response.get('SUCCESS')} **{login['player']}!**")  # type: ignore
 
-                return await send_embed(login['error'])  # type: ignore
+                return await (login['error'])  # type: ignore
 
             elif auth['auth'] == 'failed':
                 return await send_embed(auth['error'])
