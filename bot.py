@@ -25,6 +25,7 @@ intents.members = True
 
 BOT_PREFIX = '-'
 
+
 # todo claer white space
 
 if len(sys.argv) != 3:
@@ -43,6 +44,7 @@ class ValorantBot(commands.Bot):
         self.session: aiohttp.ClientSession | None = None
         self.bot_version = '3.3.5'
         self.tree.interaction_check = self.interaction_check
+        self.valorant_cog = None
 
     @staticmethod
     async def interaction_check(interaction: discord.Interaction) -> bool:
@@ -81,6 +83,9 @@ class ValorantBot(commands.Bot):
         for ext in initial_extensions:
             try:
                 await self.load_extension(ext)
+                
+                if ext == 'cogs.valorant':
+                    self.valorant_cog = self.get_cog('Valorant')
             except (
                 ExtensionNotFound,
                 NoEntryPointError,

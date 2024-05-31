@@ -25,6 +25,8 @@ from utils.errors import (
     ValorantBotError,
     PermissionMangeRoleError,
 )
+from utils.valorant.local import LocalErrorResponse
+from utils.valorant.view import LoginView
 
 if TYPE_CHECKING:
     from bot import ValorantBot
@@ -66,12 +68,24 @@ class ErrorHandler(commands.Cog):
             error_message = 'Could not manage roles.'
         # else:
         #     traceback.print_exception(type(error), error)
-
+        response = LocalErrorResponse('DATABASE', interaction.locale) # type: ignore
         print(f'Error: {error}')
         embed = discord.Embed(description=f'{str(error_message)[:2000]}', color=0xFE676E)
-        if interaction.response.is_done():
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        if response.get('NOT_LOGIN') == str(error_message):
+            
+            valorant_cog = self.bot.valorant_cog
+            
+            command_name = interaction.command.name # type: ignore
+
+            view = LoginView(valorant_cog, command_name)
+            msg = await interaction.followup.send(embed=embed, ephemeral=True, view=view) # type: ignore
+            view.init(msg)
+            # interaction = Interaction(bot=bot, channel=ctx.channel, user=ctx.author, guild=ctx.guild)
+        else:
+            # if interaction.response.is_done():
+            return await interaction.followup.send(embed=embed, ephemeral=True) # type: ignore
+            # await interaction.response.send_message(embed=embed, ephemeral=True) # type: ignore
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context[ValorantBot], error: Exception) -> None:

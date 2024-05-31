@@ -41,6 +41,26 @@ class ValorantCog(commands.Cog, name='Valorant'):
         self.db: DATABASE = MISSING
         self.reload_cache.start()
         self.party = {}
+        self.commands_dict = {
+            'login': self.login,
+            'logout': self.logout,
+            'store': self.store,
+            'point': self.point,
+            'party_create': self.party_create,
+            'party_join': self.party_join,
+            'party_voice_split': self.party_voice_split,
+            'party_voice_rechange': self.party_voice_rechange,
+            'party_room_create': self.party_room_create,
+            'party_map_recommend': self.party_map_recommend,
+            'battlepass': self.battlepass,
+            'mission': self.mission,
+            'nightmarket': self.nightmarket,
+            'battlepass': self.battlepass,
+            'bundle': self.bundle,
+            'bundles': self.bundles,
+            'cookies': self.cookies,
+            'debug': self.debug,
+        }
 
     def cog_unload(self) -> None:
         self.reload_cache.cancel()
@@ -98,8 +118,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.describe(username='Input username', password='Input password')
     # @dynamic_cooldown(cooldown_5s)
     async def login(self, interaction: Interaction[ValorantBot], username: str, password: str) -> None:
-        print("login")
-        response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+        command_name = 'login'
+        response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         user_id = interaction.user.id
         auth = self.db.auth
@@ -122,39 +142,15 @@ class ValorantCog(commands.Cog, name='Valorant'):
             message = authenticate['message']  # type: ignore
             label = authenticate['label']  # type: ignore
             modal = View.TwoFA_UI(interaction, self.db, cookies, message, label, response)
-            await interaction.response.send_modal(modal)
-    
-    async def login2(self, interaction: Interaction[ValorantBot], username: str, password: str) -> None:
-        response = ResponseLanguage("login", interaction.locale)  # type: ignore
-
-        user_id = interaction.user.id
-        auth = self.db.auth
-        auth.locale_code = interaction.locale  # type: ignore
-        authenticate = await auth.authenticate(username, password)
-
-        if authenticate['auth'] == 'response':  # type: ignore
-            await interaction.response.defer(ephemeral=True)
-            login = await self.db.login(user_id, authenticate, interaction.locale)  # type: ignore
-
-            if login['auth']:  # type: ignore
-                embed = Embed(f"{response.get('SUCCESS')} **{login['player']}!**")  # type: ignore
-                return await interaction.followup.send(embed=embed, ephemeral=True)
-
-            raise ValorantBotError(f"{response.get('FAILED')}")
-
-        elif authenticate['auth'] == '2fa':  # type: ignore
-            cookies = authenticate['cookie']  # type: ignore
-            message = authenticate['message']  # type: ignore
-            label = authenticate['label']  # type: ignore
-            modal = View.TwoFA_UI(interaction, self.db, cookies, message, label, response)
-            await interaction.response.send_modal(modal)
+            return await interaction.response.send_modal(modal)
 
     @app_commands.command(description='Logout and Delete your account from database')
     # @dynamic_cooldown(cooldown_5s)
     async def logout(self, interaction: Interaction[ValorantBot]) -> None:
         await interaction.response.defer(ephemeral=True)
 
-        response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+        command_name = 'logout'
+        response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         user_id = interaction.user.id
         if logout := self.db.logout(user_id, interaction.locale):  # type: ignore
@@ -167,10 +163,12 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def store(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer()
+        command_name = "store"
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         # language
-        response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+        response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         if not interaction.guild:
             raise ValorantBotError('This command can only be used in a server')
@@ -196,9 +194,11 @@ class ValorantCog(commands.Cog, name='Valorant'):
     async def point(self, interaction: Interaction[ValorantBot]) -> None:
         # check if user is logged in
 
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
-        response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+        command_name = 'point'
+        response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         if not interaction.guild:
             raise ValorantBotError('This command can only be used in a server')
@@ -213,7 +213,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         data = endpoint.store_fetch_wallet()
         embed = GetEmbed.point(endpoint.player, data, response, self.bot)
 
-        await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
+        await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="파티_생성", description='View your player profile')
     @app_commands.guild_only()
@@ -241,7 +241,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
             raise ValorantBotError('역할 관리 권한이 없는 거 같아요.. \n역할 관리 권한을 부여해주세요! :sob:')
             return
         
-        await interaction.response.defer(ephemeral=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         try:
             self.party[interaction.channel] = CustomParty(self, interaction, self.bot)
@@ -253,7 +254,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.command(name="파티_참여", description='내전에 참여합니다.')
     @app_commands.describe(tier="티어를 입력하세요.(예: '플3', '언랭', '레디')")
     async def party_join(self, interaction: Interaction[ValorantBot], tier: str) -> None:
-        await interaction.response.defer(ephemeral=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         if interaction.channel not in self.party:
             await interaction.followup.send('파티가 생성되지 않았습니다.', ephemeral=True)
@@ -271,7 +273,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
             await interaction.followup.send('Failed to join the party.', ephemeral=True)
 
     async def party_join2(self, interaction: Interaction[ValorantBot], tier: str) -> None:
-        await interaction.response.defer(ephemeral=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         user = interaction.user
         player_id = str(user.name)
@@ -288,7 +291,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.command(name="파티_채널_이동", description='내전 음성 채널을 나눕니다.')
     @app_commands.guild_only()
     async def party_voice_split(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer(ephemeral=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         if interaction.channel not in self.party:
             raise ValorantBotError('파티가 생성되지 않았습니다.')
@@ -308,7 +312,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.command(name="파티_채널_원위치", description='내전 음성 채팅을 다시 모입니다.')
     @app_commands.guild_only()
     async def party_voice_rechange(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer(ephemeral=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         if interaction.channel not in self.party:
             raise ValorantBotError('파티가 생성되지 않았습니다.')
@@ -328,7 +333,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.command(name="파티_방_생성", description='내전 방을 생성합니다.')
     @app_commands.guild_only()
     async def party_room_create(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
         if interaction.channel not in self.party:
             raise ValorantBotError('파티가 생성되지 않았습니다.')
@@ -411,7 +417,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.command(name="맵_추천", description='내전 맵을 추천합니다.')
     @app_commands.guild_only()
     async def party_map_recommend(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale) # type: ignore
         
@@ -492,9 +499,11 @@ class ValorantCog(commands.Cog, name='Valorant'):
     async def mission(self, interaction: Interaction[ValorantBot]) -> None:
         # check if user is logged in
 
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
-        response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+        command_name = 'mission'
+        response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         # endpoint
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
@@ -503,7 +512,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         data = endpoint.fetch_contracts()
         embed = GetEmbed.mission(endpoint.player, data, response)
 
-        await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
+        await interaction.followup.send(embed=embed)
 
     @app_commands.command(description='Show skin offers on the nightmarket')
     @app_commands.guild_only()
@@ -511,7 +520,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
     async def nightmarket(self, interaction: Interaction[ValorantBot]) -> None:
         # check if user is logged in
 
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         if not interaction.guild:
             raise ValorantBotError('This command can only be used in a server')
@@ -520,7 +530,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await setup_emoji(self.bot, interaction.guild, interaction.locale)  # type: ignore
 
         # language
-        response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+        command_name = 'nightmarket'
+        response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         # endpoint
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
@@ -533,16 +544,18 @@ class ValorantCog(commands.Cog, name='Valorant'):
         data = endpoint.store_fetch_storefront()
         embeds = GetEmbed.nightmarket(endpoint.player, data, self.bot, response)
 
-        await interaction.followup.send(embeds=embeds, view=View.share_button(interaction, embeds))  # type: ignore
+        await interaction.followup.send(embeds=embeds)  # type: ignore
 
     @app_commands.command(description='View your battlepass current tier')
     # @dynamic_cooldown(cooldown_5s)
     async def battlepass(self, interaction: Interaction[ValorantBot]) -> None:
         # check if user is logged in
 
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
-        response = ResponseLanguage(interaction.command.name, interaction.locale)  # type: ignore
+        command_name = 'battlepass'
+        response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         # endpoint
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
@@ -554,7 +567,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         embed = GetEmbed.battlepass(endpoint.player, data, season, response)
 
-        await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
+        await interaction.followup.send(embed=embed)
 
     # inspired by https://github.com/giorgi-o
     @app_commands.command(description='inspect a specific bundle')
@@ -562,9 +575,11 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def bundle(self, interaction: Interaction[ValorantBot], bundle: str) -> None:
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
-        response = ResponseLanguage(interaction.command.name, interaction.locale.value)  # type: ignore
+        command_name = 'bundle'
+        response = ResponseLanguage(command_name, interaction.locale.value)  # type: ignore
 
         if not interaction.guild:
             raise ValorantBotError('This command can only be used in a server')
@@ -600,9 +615,11 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def bundles(self, interaction: Interaction[ValorantBot]) -> None:
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
-        response = ResponseLanguage(interaction.command.name, interaction.locale.value)  # type: ignore
+        command_name = 'bundles'
+        response = ResponseLanguage(command_name, interaction.locale.value)  # type: ignore
 
         if not interaction.guild:
             raise ValorantBotError('This command can only be used in a server')
@@ -627,10 +644,12 @@ class ValorantCog(commands.Cog, name='Valorant'):
     async def cookies(self, interaction: Interaction[ValorantBot], cookie: str) -> None:
         """Login to your account with a cookie"""
 
-        await interaction.response.defer(ephemeral=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
         # language
-        response = ResponseLanguage(interaction.command.name, interaction.locale.value)  # type: ignore
+        command_name = 'cookies'
+        response = ResponseLanguage(command_name, interaction.locale.value)  # type: ignore
 
         login = await self.db.cookie_login(interaction.user.id, cookie, interaction.locale.value)
 
@@ -643,25 +662,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
         view.add_item(ui.Button(label='Tutorial', emoji='🔗', url='https://youtu.be/cFMNHEHEp2A'))
         await interaction.followup.send(f"{response.get('FAILURE')}", view=view, ephemeral=True)
 
-        
-    async def cookies2(self, interaction: Interaction[ValorantBot], cookie: str) -> None:
-        """Login to your account with a cookie"""
-
-        await interaction.response.defer(ephemeral=True)
-
-        # language
-        response = ResponseLanguage("cookies", interaction.locale.value)  # type: ignore
-
-        login = await self.db.cookie_login(interaction.user.id, cookie, interaction.locale.value)
-
-        if login['auth']:  # type: ignore
-            embed = Embed(f"{response.get('SUCCESS')} **{login['player']}!**")  # type: ignore
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
-        view = ui.View()
-        view.add_item(ui.Button(label='Tutorial', emoji='🔗', url='https://youtu.be/cFMNHEHEp2A'))
-        await interaction.followup.send(f"{response.get('FAILURE')}", view=view, ephemeral=True)
 
     # ---------- ROAD MAP ---------- #
 
@@ -690,9 +690,11 @@ class ValorantCog(commands.Cog, name='Valorant'):
         interaction: Interaction[ValorantBot],
         bug: Literal['Skin price not loading', 'Emoji not loading', 'Cache not loading'],
     ) -> None:
-        await interaction.response.defer(ephemeral=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
 
-        response = ResponseLanguage(interaction.command.name, interaction.locale.value)  # type: ignore
+        command_name = 'debug'
+        response = ResponseLanguage(command_name, interaction.locale.value)  # type: ignore
 
         if bug == 'Skin price not loading':
             # endpoint
@@ -717,3 +719,4 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
 async def setup(bot: ValorantBot) -> None:
     await bot.add_cog(ValorantCog(bot))
+    

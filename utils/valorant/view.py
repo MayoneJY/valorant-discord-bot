@@ -15,6 +15,7 @@ from .party import CustomParty
 from .useful import GetEmoji
 # Local
 from .useful import JSON, GetEmoji, GetItems, format_relative
+import inspect
 
 VLR_locale = ValorantTranslator()
 
@@ -24,80 +25,68 @@ if TYPE_CHECKING:
     from .db import DATABASE
 
 
-class ValLoginModal(ui.Modal):
-    def __init__(self, msg, valorantCog): # type: ignore
-        super().__init__(title="발로란트 로그인", timeout=None)
+class LoginModal(ui.Modal):
+    def __init__(self, msg, valorantCog, login, command_name = None): # type: ignore
         self.valorantCog = valorantCog
         self.msg = msg
-        self.add_item(ui.TextInput(label='아이디', placeholder='아이디를 입력하세요', style=TextStyle.short))
-        self.add_item(ui.TextInput(label='비밀번호', placeholder='비밀번호를 입력하세요', style=TextStyle.short))
-    
-    async def on_submit(self, interaction: Interaction[ValorantBot]) -> None:
-        try:
-            await self.valorantCog.login2(interaction, self.children[0].value, self.children[1].value) # type: ignore
-
-            await self.delete()
-
-            await self.valorantCog.party[interaction.channel].join_view.join2(interaction) # type: ignore
-
-        except Exception as e:
-            print(f"ValLoginModal.on_submit:{e}")
-
-    async def delete(self) -> None:
-        await self.msg.delete()
-
-
-class CookiesLoginModal(ui.Modal):
-    def __init__(self, msg, valorantCog): # type: ignore
-        super().__init__(title="쿠키 로그인", timeout=None)
-        self.valorantCog = valorantCog
-        self.msg = msg
-        self.add_item(ui.TextInput(label='쿠키', placeholder='쿠키를 입력하세요', style=TextStyle.short))
+        self.command_name = command_name
+        
+        if login == "val":
+            super().__init__(title="발로란트 로그인", timeout=None)
+            self.add_item(ui.TextInput(label='아이디', placeholder='아이디를 입력하세요', style=TextStyle.short))
+            self.add_item(ui.TextInput(label='비밀번호', placeholder='비밀번호를 입력하세요', style=TextStyle.short))
+        elif login == "cookie":
+            super().__init__(title="쿠키 로그인", timeout=None)
+            self.add_item(ui.TextInput(label='쿠키', placeholder='쿠키를 입력하세요', style=TextStyle.short))
+            self.add_item(ui.TextInput(label='쿠키 로그인 방법', default='https://youtu.be/cFMNHEHEp2A', style=TextStyle.short)) # type: ignore
+        elif command_name == None and login == "no_login":
+            super().__init__(title="비로그인(최소 기능)", timeout=None)
+            self.add_item(ui.TextInput(label='티어', placeholder="티어를 입력하세요.(예: '플3', '언랭', '레디')", style=TextStyle.short))
 
     async def on_submit(self, interaction: Interaction[ValorantBot]) -> None:
         try:
-            await self.valorantCog.cookies2(interaction, self.children[0].value) # type: ignore
+            if self.title == "발로란트 로그인":
+                await self.valorantCog.commands_dict['login'].callback(self.valorantCog, interaction, self.children[0].value, self.children[1].value) # type: ignore
+            elif self.title == "쿠키 로그인":
+                await self.valorantCog.commands_dict['cookies'].callback(self.valorantCog, interaction, self.children[0].value) # type: ignore
 
             await self.delete()
 
-            await self.valorantCog.party[interaction.channel].join_view.join2(interaction) # type: ignore
-
+            if self.command_name == None:
+                if self.title == "발로란트 로그인":
+                    await self.valorantCog.party[interaction.channel].join_view.join2(interaction)
+                elif self.title == "쿠키 로그인":
+                    await self.valorantCog.party[interaction.channel].join_view.join2(interaction)
+                elif self.title == "비로그인(최소 기능)":
+                    await self.valorantCog.party_join2(interaction, self.children[0].value) # type: ignore
+            else:
+                try:
+                    await self.valorantCog.commands_dict[self.command_name].callback(self.valorantCog, interaction)
+                except Exception as e:
+                    print(f"LoginModal.on_submit_method:{e}")
         except Exception as e:
-            print(f"CookiesLoginModal.on_submit:{e}")
-
-    async def delete(self) -> None:
-        await self.msg.delete()
-
-
-class NoLoginModal(ui.Modal):
-    def __init__(self, msg, valorantCog): # type: ignore
-        super().__init__(title="비로그인(최소 기능)", timeout=None)
-        self.valorantCog = valorantCog
-        self.msg = msg
-        self.add_item(ui.TextInput(label='티어', placeholder="티어를 입력하세요.(예: '플3', '언랭', '레디')", style=TextStyle.short))
-
-    async def on_submit(self, interaction: Interaction[ValorantBot]) -> None:
-        try:
-            await self.delete()
-
-            await self.valorantCog.party_join2(interaction, self.children[0].value) # type: ignore
-
-        except Exception as e:
-            print(f"NoLoginModal.on_submit:{e}")
+            print(f"LoginModal.on_submit:{e}")
 
     async def delete(self) -> None:
         await self.msg.delete()
 
 
 class LoginView(ui.View):
-    def __init__(self, valorantCog) -> None: # type: ignore
+    def __init__(self, valorantCog = None, command_name = None) -> None: # type: ignore
         super().__init__(timeout=600)
         self.valorantCog = valorantCog
-        options=[
-            discord.SelectOption(label='아이디/비밀번호', value='id_pw'),
-            discord.SelectOption(label='쿠키', value='cookie'),
-            discord.SelectOption(label='비로그인(최소 기능)', value='no_login')
-        ]
+        self.command_name = command_name
+        if command_name:
+            options=[
+                discord.SelectOption(label='발로란트 로그인', value='id_pw'),
+                discord.SelectOption(label='쿠키', value='cookie')
+            ]
+        else:
+            options=[
+                discord.SelectOption(label='발로란트 로그인', value='id_pw'),
+                discord.SelectOption(label='쿠키', value='cookie'),
+                discord.SelectOption(label='비로그인(최소 기능)', value='no_login')
+            ]
         self.select = ui.Select(placeholder='로그인 방법 선택', min_values=1, max_values=1, options=options)
         self.select.callback = self.select_callback
         self.add_item(self.select)
@@ -108,11 +97,11 @@ class LoginView(ui.View):
     async def select_callback(self, interaction: Interaction[ValorantBot]) -> None:
         try:
             if self.select.values[0] == 'id_pw':
-                await interaction.response.send_modal(ValLoginModal(self.msg, self.valorantCog))
+                await interaction.response.send_modal(LoginModal(self.msg, self.valorantCog, "val", self.command_name))
             elif self.select.values[0] == 'cookie':
-                await interaction.response.send_modal(CookiesLoginModal(self.msg, self.valorantCog))
+                await interaction.response.send_modal(LoginModal(self.msg, self.valorantCog, "cookie", self.command_name))
             elif self.select.values[0] == 'no_login':
-                await interaction.response.send_modal(NoLoginModal(self.msg, self.valorantCog))
+                await interaction.response.send_modal(LoginModal(self.msg, self.valorantCog, "no_login", self.command_name))
         except Exception as e:
             print(f"LoginView.login:{e}")
 
