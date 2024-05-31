@@ -73,6 +73,7 @@ class CustomParty():
 
     async def re_change(self, interaction: Interaction) -> None:
         try:
+            role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
             role_members2 = [member for member in interaction.guild.members if role2 in member.roles] # type: ignore
             for member in role_members2:
                 # 음성채널 이동
