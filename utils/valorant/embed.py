@@ -279,6 +279,9 @@ class GetEmbed:
         embed.description = ''
         for player, data in players.items():
             
-            embed.description = f'{embed.description}\n{data["displayName"]} - {data["emoji"]}'
+            value = f'{embed.description}\n{data["displayName"]} - {data["emoji"]}'
+            if 'headers' not in data:
+                value += ' - 비로그인'
+            embed.description = value
 
         return embed
