@@ -493,7 +493,7 @@ class API_ENDPOINT:
             }
         }
         self.post2(endpoint=f'/parties/v1/parties/{party_id}/makecustomgame', url='pd', headers=header)
-        self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamesettings', url='pd', headers=header, data=json_data)
+        # self.post2(endpoint=f'/parties/v1/parties/{party_id}/customgamesettings', url='pd', headers=header, data=json_data)
 
     def fetch_custom_game_map(self) -> list[dict[str, str]] | None:
         """
