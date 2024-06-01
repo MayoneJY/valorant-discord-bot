@@ -13,6 +13,7 @@ from ..locale_v2 import ValorantTranslator
 from .resources import get_item_type, emoji_icon_assests
 from .party import CustomParty
 from .useful import GetEmoji
+from utils.valorant.embed import Embed, GetEmbed
 # Local
 from .useful import JSON, GetEmoji, GetItems, format_relative
 import inspect
@@ -118,6 +119,99 @@ class LoginView(ui.View):
                 await interaction.response.send_modal(LoginModal(self.msg, self.valorantCog, "no_login", self.command_name))
         except Exception as e:
             print(f"LoginView.login:{e}")
+
+
+class CustomPartySpactorButtons(ui.View):
+    def __init__(self, custom_party: CustomParty, interaction: Interaction[ValorantBot]) -> None:
+        super().__init__(timeout=600)
+        self.custom_party = custom_party
+        self.interaction = interaction
+        self.msg = None
+        self.team1 = []
+        self.team2 = []
+
+    @ui.button(label='1팀 관전', style=ButtonStyle.green)
+    async def spactor_team_one(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
+        await interaction.response.defer(ephemeral=True)
+        
+        if interaction.user.name in self.custom_party.players:
+            await interaction.followup.send('파티에 참여된 상태에서 관전자로 변경할 수 없습니다.', ephemeral=True)
+            return
+
+        role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+        role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+        if role1 in interaction.user.roles: # type: ignore
+            await interaction.followup.send('이미 1팀에 속해있습니다.', ephemeral=True)
+            return
+        if role2 in interaction.user.roles: # type: ignore
+            await interaction.user.remove_roles(role2) # type: ignore
+        self.team1.append(f"{interaction.user.global_name}")
+        await interaction.user.add_roles(role1) # type: ignore
+
+        await interaction.followup.send('1팀 관전자로 설정되었습니다.', ephemeral=True)
+
+        await self.msg_embed()
+        
+    @ui.button(label='2팀 관전', style=ButtonStyle.primary)
+    async def spactor_team_two(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
+        await interaction.response.defer(ephemeral=True)
+        
+        if interaction.user.name in self.custom_party.players:
+            await interaction.followup.send('파티에 참여된 상태에서 관전자로 변경할 수 없습니다.', ephemeral=True)
+            return
+
+        role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+        role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+        if role2 in interaction.user.roles: # type: ignore
+            await interaction.followup.send('이미 2팀에 속해있습니다.', ephemeral=True)
+            return
+        if role1 in interaction.user.roles: # type: ignore
+            await interaction.user.remove_roles(role1) # type: ignore
+        self.team2.append(f"{interaction.user.global_name}")
+        await interaction.user.add_roles(role2) # type: ignore
+
+        await interaction.followup.send('2팀 관전자로 설정되었습니다.', ephemeral=True)
+
+        await self.msg_embed()
+
+
+    @ui.button(label='관전 퇴장', style=ButtonStyle.red)
+    async def leave(self, interaction: Interaction[ValorantBot], button: ui.Button) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        role1 = discord.utils.get(interaction.guild.roles, name="VAL_1") # type: ignore
+        role2 = discord.utils.get(interaction.guild.roles, name="VAL_2") # type: ignore
+        check = False
+        if role1 in interaction.user.roles: # type: ignore
+            await interaction.user.remove_roles(role1) # type: ignore
+            self.team1.remove(f"{interaction.user.global_name}")
+            check = True
+        elif role2 in interaction.user.roles: # type: ignore
+            await interaction.user.remove_roles(role2) # type: ignore
+            self.team2.remove(f"{interaction.user.global_name}")
+            check = True
+
+        if check:
+            await interaction.followup.send('관전자에서 퇴장했습니다.', ephemeral=True)
+            if len(self.team1) == 0 and len(self.team2) == 0:
+                await self.msg.delete() # type: ignore
+                self.msg = None
+        else:
+            await interaction.followup.send('관전자로 설정되어 있지 않습니다.', ephemeral=True)
+
+    async def msg_embed(self) -> None:
+
+        embeds = []
+
+        embeds.append(discord.Embed(title=f"팀 1 관전자", color=0xff0000))
+        embeds[1].add_field(name="", value="\n".join(self.team1), inline=False)
+
+        embeds.append(discord.Embed(title=f"팀 2 관전자", color=0x0000ff))
+        embeds[2].add_field(name="", value="\n".join(self.team2), inline=False)
+        if self.msg:
+            await self.msg.edit(embeds=embeds) # type: ignore
+        else:
+            self.msg = await self.interaction.followup.send(embeds=embeds)
 
 class CustomPartyJoinButtons(ui.View):
     def __init__(self, interaction:Interaction[ValorantBot], custom_party: CustomParty, valorantCog, bot: ValorantBot) -> None: # type: ignore
@@ -331,7 +425,7 @@ class CustomPartyStartButtons(ui.View):
             embeds[2].add_field(name="", value="\n".join(modifed_best_team2), inline=False)
             self.is_started = True
 
-            await interaction.followup.send(embeds=embeds)
+            await interaction.followup.send(embeds=embeds, view=CustomPartySpactorButtons(self.custom_party, interaction))
             await self.check(interaction)
             await self.custom_party.delete_party_list_message()
 
