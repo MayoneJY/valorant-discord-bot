@@ -24,6 +24,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 import pyperclip
+import random
 
 import asyncio
 
@@ -171,33 +172,33 @@ class Auth:
         # chrome_options.add_argument('--headless')  
         chrome_options.add_argument('--disable-gpu')  
         user_agent = '/home/mayone/.config/google-chrome/Default'
-        chrome_options.add_argument('user_agent =' + user_agent)
+        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
 
         driver = webdriver.Chrome(options=chrome_options)
 
         driver.get("https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid")
-        await asyncio.sleep(1)
+        await asyncio.sleep(random.uniform(0, 1))
 
         actions = ActionChains(driver)
         wait = WebDriverWait(driver, 10)
         username_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-username"]')))
         pyperclip.copy(username)
         username_input.click()
-        await asyncio.sleep(1)
+        await asyncio.sleep(random.uniform(0, 1))
 
         actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-        await asyncio.sleep(1)
+        await asyncio.sleep(random.uniform(0, 1))
 
 
         password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-password"]')))
         pyperclip.copy(password)
         password_input.click()
-        await asyncio.sleep(1)
+        await asyncio.sleep(random.uniform(0, 1))
         actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-        await asyncio.sleep(1)
+        await asyncio.sleep(random.uniform(0, 1))
         password_input.send_keys(Keys.RETURN)
 
-        await asyncio.sleep(3)
+        await asyncio.sleep(random.uniform(1, 3))
 
         driver.quit()
 
