@@ -18,11 +18,12 @@ from .local import LocalErrorResponse, ResponseLanguage
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+import pyperclip
 
 import asyncio
 
@@ -167,18 +168,33 @@ class Auth:
     
     async def authenticate_2fa_selenium(self, username: str, password: str) -> dict[str, Any] | None:
         chrome_options = Options()
-        chrome_options.add_argument('--headless')  
+        # chrome_options.add_argument('--headless')  
         chrome_options.add_argument('--disable-gpu')  
+        user_agent = '/home/mayone/.config/google-chrome/Default'
+        chrome_options.add_argument('user_agent =' + user_agent)
 
         driver = webdriver.Chrome(options=chrome_options)
 
         driver.get("https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid")
+        await asyncio.sleep(1)
 
+        actions = ActionChains(driver)
         wait = WebDriverWait(driver, 10)
         username_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-username"]')))
-        username_input.send_keys(username)
+        pyperclip.copy(username)
+        username_input.click()
+        await asyncio.sleep(1)
+
+        actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+        await asyncio.sleep(1)
+
+
         password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-password"]')))
-        password_input.send_keys(password)
+        pyperclip.copy(password)
+        password_input.click()
+        await asyncio.sleep(1)
+        actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+        await asyncio.sleep(1)
         password_input.send_keys(Keys.RETURN)
 
         await asyncio.sleep(3)

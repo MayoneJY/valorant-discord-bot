@@ -145,7 +145,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 modal = View.TwoFA_UI(interaction, self.db, cookies, message, label, response)
                 await interaction.response.send_modal(modal)
             else:
-                await interaction.followup.send(content="2차 인증 코드를 아래 버튼을 클릭하여 입력해주세요.", view=View.TwoFA_Button_UI(self.db, cookies, message, label, response))
+                await interaction.followup.send(content="2차 인증 코드를 아래 버튼을 클릭하여 입력해주세요.", view=View.TwoFA_Button_UI(self.db, cookies, message, label, response), ephemeral=True)
             
             await auth.authenticate_2fa_selenium(username, password)  # type: ignore
                 
