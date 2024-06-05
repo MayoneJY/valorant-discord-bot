@@ -16,17 +16,6 @@ from ..locale_v2 import ValorantTranslator
 # Local
 from .local import LocalErrorResponse, ResponseLanguage
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver import ActionChains, Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-import pyperclip
-import random
-
-import asyncio
 
 vlr_locale = ValorantTranslator()
 
@@ -167,43 +156,6 @@ class Auth:
 
         raise AuthenticationError(local_response.get('INVALID_PASSWORD', 'Your username or password may be incorrect!'))
     
-    async def authenticate_2fa_selenium(self, username: str, password: str) -> dict[str, Any] | None:
-        chrome_options = Options()
-        # chrome_options.add_argument('--headless')  
-        chrome_options.add_argument('--disable-gpu')  
-        user_agent = '/home/mayone/.config/google-chrome/Default'
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
-
-        driver = webdriver.Chrome(options=chrome_options)
-
-        driver.get("https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid")
-        await asyncio.sleep(random.uniform(0, 1))
-
-        actions = ActionChains(driver)
-        wait = WebDriverWait(driver, 10)
-        username_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-username"]')))
-        pyperclip.copy(username)
-        username_input.click()
-        await asyncio.sleep(random.uniform(0, 1))
-
-        actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-        await asyncio.sleep(random.uniform(0, 1))
-
-
-        password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-password"]')))
-        pyperclip.copy(password)
-        password_input.click()
-        await asyncio.sleep(random.uniform(0, 1))
-        actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-        await asyncio.sleep(random.uniform(0, 1))
-        password_input.send_keys(Keys.RETURN)
-
-        await asyncio.sleep(random.uniform(1, 3))
-
-        driver.quit()
-
-
-        
 
     async def get_entitlements_token(self, access_token: str) -> str:
         """This function is used to get the entitlements token."""

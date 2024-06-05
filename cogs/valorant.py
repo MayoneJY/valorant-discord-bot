@@ -118,7 +118,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
     @app_commands.describe(username='Input username', password='Input password')
     # @dynamic_cooldown(cooldown_5s)
     async def login(self, interaction: Interaction[ValorantBot], username: str, password: str) -> None:
-        await interaction.response.defer(ephemeral=True)
         command_name = 'login'
         response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
@@ -128,6 +127,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         authenticate = await auth.authenticate(username, password)
 
         if authenticate['auth'] == 'response':  # type: ignore
+            await interaction.response.defer(ephemeral=True)
             login = await self.db.login(user_id, authenticate, interaction.locale)  # type: ignore
 
             if login['auth']:  # type: ignore
@@ -146,8 +146,6 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 await interaction.response.send_modal(modal)
             else:
                 await interaction.followup.send(content="2차 인증 코드를 아래 버튼을 클릭하여 입력해주세요.", view=View.TwoFA_Button_UI(self.db, cookies, message, label, response), ephemeral=True)
-            
-            await auth.authenticate_2fa_selenium(username, password)  # type: ignore
                 
 
     @app_commands.command(description='Logout and Delete your account from database')
