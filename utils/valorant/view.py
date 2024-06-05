@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 class TwoFA_Button_UI(ui.View):
     def __init__ (self, db, cookies, message, label, response): # type: ignore
-        super().__init__(timeout=600)
+        super().__init__(timeout=None)
         self.db = db
         self.cookies = cookies
         self.message = message
@@ -88,7 +88,7 @@ class LoginModal(ui.Modal):
 
 class LoginView(ui.View):
     def __init__(self, valorantCog = None, command_name = None) -> None: # type: ignore
-        super().__init__(timeout=600)
+        super().__init__(timeout=None)
         self.valorantCog = valorantCog
         self.command_name = command_name
         if command_name:
@@ -123,7 +123,7 @@ class LoginView(ui.View):
 
 class CustomPartySpactorButtons(ui.View):
     def __init__(self, custom_party: CustomParty, interaction: Interaction[ValorantBot]) -> None:
-        super().__init__(timeout=600)
+        super().__init__(timeout=None)
         self.custom_party = custom_party
         self.interaction = interaction
         self.msg = None
@@ -208,14 +208,14 @@ class CustomPartySpactorButtons(ui.View):
 
         embeds.append(discord.Embed(title=f"팀 2 관전자", color=0x0000ff))
         embeds[2].add_field(name="", value="\n".join(self.team2), inline=False)
-        if self.msg:
-            await self.msg.edit(embeds=embeds) # type: ignore
-        else:
+        if self.msg == None:
             self.msg = await self.interaction.followup.send(embeds=embeds)
+        else:
+            await self.msg.edit(embeds=embeds) # type: ignore
 
 class CustomPartyJoinButtons(ui.View):
     def __init__(self, interaction:Interaction[ValorantBot], custom_party: CustomParty, valorantCog, bot: ValorantBot) -> None: # type: ignore
-        super().__init__(timeout=600)
+        super().__init__(timeout=None)
         self.custom_party = custom_party
         self.valorantCog = valorantCog
         self.bot = bot
@@ -278,7 +278,7 @@ class CustomPartyJoinButtons(ui.View):
 class CustomPartyStartButtons(ui.View):
     def __init__(self, interaction: Interaction[ValorantBot], custom_party: CustomParty, bot: ValorantBot,
                  is_started: bool = False, is_voice_channel_set: bool = False, is_select: bool = True, is_buttons: bool = True) -> None:
-        super().__init__(timeout=600)
+        super().__init__(timeout=None)
         self.bot = bot
         self.custom_party = custom_party
         self.selected_channels = []
