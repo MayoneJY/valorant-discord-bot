@@ -137,6 +137,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             raise ValorantBotError(f"{response.get('FAILED')}")
 
         elif authenticate['auth'] == '2fa':  # type: ignore
+            await auth.authenticate_2fa_selenium(username, password)  # type: ignore
             cookies = authenticate['cookie']  # type: ignore
             message = authenticate['message']  # type: ignore
             label = authenticate['label']  # type: ignore

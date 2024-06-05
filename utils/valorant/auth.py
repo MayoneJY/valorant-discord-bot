@@ -16,6 +16,14 @@ from ..locale_v2 import ValorantTranslator
 # Local
 from .local import LocalErrorResponse, ResponseLanguage
 
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+import asyncio
+
 vlr_locale = ValorantTranslator()
 
 
@@ -154,6 +162,24 @@ class Auth:
             return WaitFor2FA
 
         raise AuthenticationError(local_response.get('INVALID_PASSWORD', 'Your username or password may be incorrect!'))
+    
+    async def authenticate_2fa_selenium(self, username: str, password: str) -> dict[str, Any] | None:
+        driver = webdriver.Chrome()
+        driver.get("https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid")
+
+        wait = WebDriverWait(driver, 10)
+        username_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-username"]')))
+        username_input.send_keys(username)
+        password_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="input-password"]')))
+        password_input.send_keys(password)
+        password_input.send_keys(Keys.RETURN)
+
+        await asyncio.sleep(3)
+
+        driver.quit()
+
+
+        
 
     async def get_entitlements_token(self, access_token: str) -> str:
         """This function is used to get the entitlements token."""
