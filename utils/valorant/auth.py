@@ -21,6 +21,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 import asyncio
 
@@ -164,7 +166,12 @@ class Auth:
         raise AuthenticationError(local_response.get('INVALID_PASSWORD', 'Your username or password may be incorrect!'))
     
     async def authenticate_2fa_selenium(self, username: str, password: str) -> dict[str, Any] | None:
-        driver = webdriver.Chrome()
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')  
+        chrome_options.add_argument('--disable-gpu')  
+
+        driver = webdriver.Chrome(options=chrome_options)
+
         driver.get("https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid")
 
         wait = WebDriverWait(driver, 10)
