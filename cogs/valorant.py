@@ -137,16 +137,17 @@ class ValorantCog(commands.Cog, name='Valorant'):
             raise ValorantBotError(f"{response.get('FAILED')}")
 
         elif authenticate['auth'] == '2fa':  # type: ignore
-            await auth.authenticate_2fa_selenium(username, password)  # type: ignore
             cookies = authenticate['cookie']  # type: ignore
             message = authenticate['message']  # type: ignore
             label = authenticate['label']  # type: ignore
 
             if hasattr(interaction.command, 'name'): # type: ignore
                 modal = View.TwoFA_UI(interaction, self.db, cookies, message, label, response)
-                return await interaction.response.send_modal(modal)
+                await interaction.response.send_modal(modal)
             else:
                 await interaction.followup.send(content="2차 인증 코드를 아래 버튼을 클릭하여 입력해주세요.", view=View.TwoFA_Button_UI(self.db, cookies, message, label, response))
+            
+            await auth.authenticate_2fa_selenium(username, password)  # type: ignore
                 
 
     @app_commands.command(description='Logout and Delete your account from database')
