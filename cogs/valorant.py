@@ -61,6 +61,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             'debug': self.debug,
         }
 
+
     def cog_unload(self) -> None:
         self.reload_cache.cancel()
 
