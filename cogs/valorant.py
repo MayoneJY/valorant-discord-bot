@@ -30,10 +30,10 @@ rank_list = ['언랭', '미사용', '미사용', '아1', '아2', '아3', '브1',
 
     
 
-    
 
 class ValorantCog(commands.Cog, name='Valorant'):
     """Valorant API Commands"""
+    party_group = app_commands.Group(name="파티", description="파티 관련 커맨드입니다.")
 
     def __init__(self, bot: ValorantBot) -> None:
         self.bot: ValorantBot = bot
@@ -221,7 +221,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
-    @app_commands.command(name="파티_생성", description='View your player profile')
+    @party_group.command(name="생성", description='내전을 생성합니다.')
     @app_commands.guild_only()
     async def party_create(self, interaction: Interaction[ValorantBot]) -> None:
             # check if user is logged in
@@ -257,7 +257,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             print(e)
             raise ValorantBotError('테스트중인 커맨드입니다. 빠르게 사용할 수 있게 만들게요! :yum:')
 
-    @app_commands.command(name="파티_참여", description='내전에 참여합니다.')
+    @party_group.command(name="참여", description='내전에 참여합니다.')
     @app_commands.describe(tier="티어를 입력하세요.(예: '플3', '언랭', '레디')")
     async def party_join(self, interaction: Interaction[ValorantBot], tier: str) -> None:
         if not interaction.response.is_done():
@@ -294,7 +294,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             await interaction.followup.send('Failed to join the party.', ephemeral=True)
 
     
-    @app_commands.command(name="파티_채널_이동", description='내전 음성 채널을 나눕니다.')
+    @party_group.command(name="채널이동", description='내전 음성 채널을 나눕니다.')
     @app_commands.guild_only()
     async def party_voice_split(self, interaction: Interaction[ValorantBot]) -> None:
         if not interaction.response.is_done():
@@ -315,7 +315,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await self.party[interaction.channel].move_users(interaction)
 
     
-    @app_commands.command(name="파티_채널_원위치", description='내전 음성 채팅을 다시 모입니다.')
+    @party_group.command(name="채널원위치", description='내전 음성 채팅을 다시 모입니다.')
     @app_commands.guild_only()
     async def party_voice_rechange(self, interaction: Interaction[ValorantBot]) -> None:
         if not interaction.response.is_done():
@@ -336,14 +336,14 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await self.party[interaction.channel].re_change(interaction)
 
     
-    @app_commands.command(name="파티_방_생성", description='내전 방을 생성합니다.')
+    @party_group.command(name="발로란트", description='발로란트 내전을 생성합니다.')
     @app_commands.guild_only()
     async def party_room_create(self, interaction: Interaction[ValorantBot]) -> None:
         if not interaction.response.is_done():
             await interaction.response.defer()
 
         if interaction.channel not in self.party:
-            raise ValorantBotError('파티가 생성되지 않았습니다.')
+            raise ValorantBotError('내전이 생성되지 않았습니다.')
             return
         
         if len(self.party[interaction.channel].best_team1) == 0:
@@ -351,7 +351,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             return
         
         if interaction.user.name not in self.party[interaction.channel].players:
-            raise ValorantBotError(f'{interaction.user.mention}님이 파티에 참여하지 않아 방을 생성할 수 없습니다.')
+            raise ValorantBotError(f'{interaction.user.mention}님이 내전에 참여하지 않아 방을 생성할 수 없습니다.')
 
         endpoint = await self.get_endpoint(interaction.user.id, interaction.locale)  # type: ignore
 
@@ -362,19 +362,16 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 return
         except Exception as e:
             print(e)
-            raise ValorantBotError(f'파티 방 생성에 실패했습니다.\n{e}')
+            raise ValorantBotError(f'발로란트 내전 생성에 실패했습니다.\n{e}')
             return
         players, team1, team2 = await self.party[interaction.channel].invite_room(interaction, endpoint.player) # list[puuid]
-
-        print("파티 생성")
 
         try:
             endpoint.set_party_accessibility(partyid)
         except Exception as e:
             print(e)
-            raise ValorantBotError(f'파티 공개 파티 전환에 실패했습니다.\n{e}')
+            raise ValorantBotError(f'공개 파티 전환에 실패했습니다.\n{e}')
             return
-        print("파티 공개 파티 전환")
 
         try:
             code = endpoint.generate_party_code(partyid)
@@ -384,7 +381,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             print(e)
             raise ValorantBotError(f'파티 코드 생성에 실패했습니다.\n{e}')
             return
-        print("파티 코드 생성")
+        
         try:
             data = endpoint.fetch_custom_game_map()
 
@@ -401,15 +398,15 @@ class ValorantCog(commands.Cog, name='Valorant'):
             print(e)
             raise ValorantBotError(f'커스텀게임 생성에 실패했습니다.\n{e}')
             return
-        print("커스텀게임 생성")
+        
 
         try:
             await endpoint.join_party_code(interaction, players, code)
         except Exception as e:
             print(e)
-            raise ValorantBotError(f'팀원이 파티에 참가하지 못했습니다.\n{e}')
+            raise ValorantBotError(f'팀원이 내전에 참가하지 못했습니다.\n{e}')
             return
-        print("팀원이 파티에 참가")
+        
 
         try:
             endpoint.change_custom_game_team(partyid, team1, team2 ,endpoint.headers)
@@ -417,10 +414,10 @@ class ValorantCog(commands.Cog, name='Valorant'):
             print(e)
             raise ValorantBotError(f'팀 변경에 실패했습니다.\n{e}')
             return
-        print("팀 변경")
+        
 
 
-    @app_commands.command(name="맵_추천", description='내전 맵을 추천합니다.')
+    @party_group.command(name="맵", description='내전 맵을 추천합니다.')
     @app_commands.guild_only()
     async def party_map_recommend(self, interaction: Interaction[ValorantBot]) -> None:
         if not interaction.response.is_done():
