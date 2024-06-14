@@ -1,7 +1,7 @@
 {
     "translation_by": "NIGHTMARE#3194 제작 | mayone 수정",
     "commands": {
-        "login": {
+        "로그인": {
             "NAME": "로그인",
             "DESCRIPTION": "라이엇 계정으로 로그인",
             "DESCRIBE": {
@@ -11,13 +11,13 @@
             "SUCCESS": "로그인 성공!",
             "FAILED": "로그인 실패. 다시 시도하세요."
         },
-        "logout": {
+        "로그아웃": {
             "NAME": "로그아웃",
             "DESCRIPTION": "계정 탈퇴",
             "SUCCESS": "로그아웃 성공!",
             "FAILED": "로그아웃 실패. 다시 시도하세요."
         },
-        "store": {
+        "상점": {
             "NAME": "상점",
             "DESCRIPTION": "본인 계정의 일일상점을 표시합니다.",
             "DESCRIBE": {
@@ -26,12 +26,12 @@
             },
             "RESPONSE": "**{username}**의 일일상점 | {duration} 갱신"
         },
-        "point": {
+        "포인트": {
             "NAME": "포인트",
             "DESCRIPTION": "본인 계정의 발로란트 포인트(VP)와 레디언트 포인트(RP)를 표시합니다.",
             "POINT": "포인트"
         },
-        "mission": {
+        "미션": {
             "NAME": "미션",
             "DESCRIPTION": "본인 계정의 일일/주간 미션 진행률을 표시합니다.",
             "TITLE": "미션",
@@ -42,13 +42,13 @@
             "DAILY_RESET": "{duration} 초기화",
             "REFILLS": "{duration} 갱신"
         },
-        "nightmarket": {
+        "야시장": {
             "NAME": "야시장",
             "DESCRIPTION": "본인 계정의 야시장을 표시합니다.",
             "RESPONSE": "**{username}** 의 야시장 | {duration} 종료",
             "NIGMARKET_HAS_END": "**야시장** 종료"
         },
-        "battlepass": {
+        "배틀패스": {
             "NAME": "배틀패스",
             "DESCRIPTION": "본인 계정의 배틀패스 현황을 표시합니다.",
             "RESPONSE": "**다음 보상:** {next}\n**종류:** {type}\n**XP:** {xp}\n**ACT 종료 시간:** {end}",
@@ -110,7 +110,7 @@
             },
             "SUCCESS": "알림 채널이 **{channel}** 으로 변경 되었습니다."
         },
-        "bundle": {
+        "번들": {
             "NAME": "번들",
             "DESCRIPTION": "본인 계정의 번들 진행상황",
             "DESCRIBE": {
@@ -120,7 +120,7 @@
             "DROPDOWN_CHOICE_TITLE": "번들 선택:",
             "NOT_FOUND_BUNDLE": "아무 번들이 발견되지 않음"
         },
-        "bundles": {
+        "번들상점": {
             "NAME": "번들",
             "DESCRIPTION": "본인 계정의 번들 진행상황",
             "TITLE": "포함된 번들: {bundle} 컬렉션",
@@ -140,7 +140,7 @@
             },
             "SUCCESS": "성공적으로 디버깅됨: **{bug}**"
         },
-        "cookies": {
+        "쿠키": {
             "NAME": "쿠키",
             "DESCRIPTION": "브라우저 쿠키를 사용하여 라이엇 계정에 로그인",
             "DESCRIBE": {

@@ -42,23 +42,22 @@ class ValorantCog(commands.Cog, name='Valorant'):
         self.reload_cache.start()
         self.party = {}
         self.commands_dict = {
-            'login': self.login,
-            'logout': self.logout,
-            'store': self.store,
-            'point': self.point,
+            '로그인': self.login,
+            '로그아웃': self.logout,
+            '상점': self.store,
+            '포인트': self.point,
             'party_create': self.party_create,
             'party_join': self.party_join,
             'party_voice_split': self.party_voice_split,
             'party_voice_rechange': self.party_voice_rechange,
             'party_room_create': self.party_room_create,
             'party_map_recommend': self.party_map_recommend,
-            'battlepass': self.battlepass,
-            'mission': self.mission,
-            'nightmarket': self.nightmarket,
-            'battlepass': self.battlepass,
-            'bundle': self.bundle,
-            'bundles': self.bundles,
-            'cookies': self.cookies,
+            '배틀패스': self.battlepass,
+            '미션': self.mission,
+            '야시장': self.nightmarket,
+            '번들': self.bundle,
+            '번들상점': self.bundles,
+            '쿠키': self.cookies,
             'debug': self.debug,
         }
 
@@ -114,11 +113,11 @@ class ValorantCog(commands.Cog, name='Valorant'):
         endpoint.activate(data)  # type: ignore
         return endpoint
 
-    @app_commands.command(description='Log in with your Riot acoount')
-    @app_commands.describe(username='Input username', password='Input password')
+    @app_commands.command(name="로그인", description='발로란트에 로그인합니다.')
+    @app_commands.describe(username='아이디', password='비밀번호')
     # @dynamic_cooldown(cooldown_5s)
     async def login(self, interaction: Interaction[ValorantBot], username: str, password: str) -> None:
-        command_name = 'login'
+        command_name = '로그인'
         response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         user_id = interaction.user.id
@@ -150,12 +149,12 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 await interaction.followup.send(content="2차 인증 코드를 아래 버튼을 클릭하여 입력해주세요.", view=View.TwoFA_Button_UI(self.db, cookies, message, label, response), ephemeral=True)
                 
 
-    @app_commands.command(description='Logout and Delete your account from database')
+    @app_commands.command(name="로그아웃", description='발로란트에 로그아웃한 후, db에서 로그인 정보를 삭제합니다.')
     # @dynamic_cooldown(cooldown_5s)
     async def logout(self, interaction: Interaction[ValorantBot]) -> None:
         await interaction.response.defer(ephemeral=True)
 
-        command_name = 'logout'
+        command_name = '로그아웃'
         response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         user_id = interaction.user.id
@@ -165,11 +164,11 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 return await interaction.followup.send(embed=embed, ephemeral=True)
             raise ValorantBotError(response.get('FAILED'))
 
-    @app_commands.command(description='Shows your daily store in your accounts')
+    @app_commands.command(name='상점', description='일일상점을 확인합니다.')
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def store(self, interaction: Interaction[ValorantBot]) -> None:
-        command_name = "store"
+        command_name = "상점"
         if not interaction.response.is_done():
             await interaction.response.defer(ephemeral=True)
 
@@ -192,9 +191,9 @@ class ValorantCog(commands.Cog, name='Valorant'):
         # data
         data = endpoint.store_fetch_storefront()
         embeds = GetEmbed.store(endpoint.player, data, response, self.bot)
-        await interaction.followup.send(embeds=embeds, view=View.share_button(interaction, embeds))
+        await interaction.followup.send(embeds=embeds, view=View.share_button(interaction, embeds), ephemeral=True)
 
-    @app_commands.command(description='View your remaining Valorant and Riot Points (VP/RP)')
+    @app_commands.command(name='포인트', description='발로란트 보유한 포인트를 확인합니다.(VP/RP)')
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def point(self, interaction: Interaction[ValorantBot]) -> None:
@@ -203,7 +202,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         if not interaction.response.is_done():
             await interaction.response.defer(ephemeral=True)
 
-        command_name = 'point'
+        command_name = '포인트'
         response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         if not interaction.guild:
@@ -497,7 +496,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         return int(data)
 
 
-    @app_commands.command(description='View your daily/weekly mission progress')
+    @app_commands.command(name='미션', description='일일/주간미션을 확인합니다.')
     # @dynamic_cooldown(cooldown_5s)
     async def mission(self, interaction: Interaction[ValorantBot]) -> None:
         # check if user is logged in
@@ -505,7 +504,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         if not interaction.response.is_done():
             await interaction.response.defer(ephemeral=True)
 
-        command_name = 'mission'
+        command_name = '미션'
         response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         # endpoint
@@ -517,7 +516,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
-    @app_commands.command(description='Show skin offers on the nightmarket')
+    @app_commands.command(name='야시장', description='야시장을 확인합니다.')
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def nightmarket(self, interaction: Interaction[ValorantBot]) -> None:
@@ -533,7 +532,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await setup_emoji(self.bot, interaction.guild, interaction.locale)  # type: ignore
 
         # language
-        command_name = 'nightmarket'
+        command_name = '야시장'
         response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         # endpoint
@@ -549,7 +548,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
         await interaction.followup.send(embeds=embeds, view=View.share_button(interaction, embeds))  # type: ignore
 
-    @app_commands.command(description='View your battlepass current tier')
+    @app_commands.command(name='배틀패스', description='현재 배틀패스 레벨을 확인합니다.')
     # @dynamic_cooldown(cooldown_5s)
     async def battlepass(self, interaction: Interaction[ValorantBot]) -> None:
         # check if user is logged in
@@ -557,7 +556,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
         if not interaction.response.is_done():
             await interaction.response.defer(ephemeral=True)
 
-        command_name = 'battlepass'
+        command_name = '배틀패스'
         response = ResponseLanguage(command_name, interaction.locale)  # type: ignore
 
         # endpoint
@@ -573,15 +572,15 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await interaction.followup.send(embed=embed, view=View.share_button(interaction, [embed]))
 
     # inspired by https://github.com/giorgi-o
-    @app_commands.command(description='inspect a specific bundle')
-    @app_commands.describe(bundle='The name of the bundle you want to inspect!')
+    @app_commands.command(name='번들', description='특정 번들을 확인합니다.')
+    @app_commands.describe(bundle='번들 이름을 입력하세요.')
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def bundle(self, interaction: Interaction[ValorantBot], bundle: str) -> None:
         if not interaction.response.is_done():
             await interaction.response.defer()
 
-        command_name = 'bundle'
+        command_name = '번들'
         response = ResponseLanguage(command_name, interaction.locale.value)  # type: ignore
 
         if not interaction.guild:
@@ -614,14 +613,14 @@ class ValorantCog(commands.Cog, name='Valorant'):
         await view.start()
 
     # inspired by https://github.com/giorgi-o
-    @app_commands.command(description='Show the current featured bundles')
+    @app_commands.command(name='번들상점', description='상점에 존재하는 번들을 확인합니다.')
     @app_commands.guild_only()
     # @dynamic_cooldown(cooldown_5s)
     async def bundles(self, interaction: Interaction[ValorantBot]) -> None:
         if not interaction.response.is_done():
             await interaction.response.defer()
 
-        command_name = 'bundles'
+        command_name = '번들상점'
         response = ResponseLanguage(command_name, interaction.locale.value)  # type: ignore
 
         if not interaction.guild:
@@ -642,8 +641,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
 
     # credit https://github.com/giorgi-o
     # https://github.com/giorgi-o/SkinPeek/wiki/How-to-get-your-Riot-cookies
-    @app_commands.command()
-    @app_commands.describe(cookie='Your cookie')
+    @app_commands.command(name='쿠키', description='쿠키를 사용하여 계정에 로그인합니다.')
+    @app_commands.describe(cookie='쿠키')
     async def cookies(self, interaction: Interaction[ValorantBot], cookie: str) -> None:
         """Login to your account with a cookie"""
 
@@ -651,7 +650,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
             await interaction.response.defer(ephemeral=True)
 
         # language
-        command_name = 'cookies'
+        command_name = '쿠키'
         response = ResponseLanguage(command_name, interaction.locale.value)  # type: ignore
 
         login = await self.db.cookie_login(interaction.user.id, cookie, interaction.locale.value)

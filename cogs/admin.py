@@ -47,6 +47,28 @@ class Admin(commands.Cog):
             await self.bot.tree.sync()
             await ctx.reply('Un-Synced global !')
 
+    @commands.command()
+    @commands.is_owner()
+    async def update_notices(self, ctx: commands.Context[ValorantBot], *, msg:str ) -> None:
+        """Update the notices"""
+        # 봇이 참여된 모든 서버에 공지를 업데이트합니다.
+        for guild in self.bot.guilds:
+            for channel in guild.text_channels:
+                try:
+                    embed = discord.Embed(
+                        title='업데이트 공지!',
+                        description='아래와 같이 업데이트 되었습니다.',
+                        color=0x00FF00,
+                    )
+                    embed.add_field(name='업데이트 내용', value=msg, inline=False)
+                    await channel.send(embed=embed)
+                    break
+
+                except discord.Forbidden:
+                    print(f"Cannot send message to {channel.name} in {guild.name}")
+                except discord.HTTPException as e:
+                    print(f"Failed to send message to {channel.name} in {guild.name}: {e}")
+
     @app_commands.command(description='Shows basic information about the bot.')
     async def about(self, interaction: Interaction) -> None:
         """Shows basic information about the bot."""

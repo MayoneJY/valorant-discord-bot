@@ -61,9 +61,9 @@ class LoginModal(ui.Modal):
     async def on_submit(self, interaction: Interaction[ValorantBot]) -> None:
         try:
             if self.title == "발로란트 로그인":
-                await self.valorantCog.commands_dict['login'].callback(self.valorantCog, interaction, self.children[0].value, self.children[1].value) # type: ignore
+                await self.valorantCog.commands_dict['로그인'].callback(self.valorantCog, interaction, self.children[0].value, self.children[1].value) # type: ignore
             elif self.title == "쿠키 로그인":
-                await self.valorantCog.commands_dict['cookies'].callback(self.valorantCog, interaction, self.children[0].value) # type: ignore
+                await self.valorantCog.commands_dict['쿠키'].callback(self.valorantCog, interaction, self.children[0].value) # type: ignore
 
             await self.delete()
 
