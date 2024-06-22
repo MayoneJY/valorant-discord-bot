@@ -431,6 +431,7 @@ class API_ENDPOINT:
             if 'errorCode' in data:
                 if data['errorCode'] == 'PLAYER_DOES_NOT_EXIST':
                     await interaction.followup.send(f'{player["user"].mention}님은 `발로란트`에 로그인되어 있지 않아 초대에서 제외되었습니다.')
+            await asyncio.sleep(0.1)
 
 
 
