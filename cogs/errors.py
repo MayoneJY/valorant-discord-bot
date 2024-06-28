@@ -86,6 +86,7 @@ class ErrorHandler(commands.Cog):
             # if interaction.response.is_done():
             return await interaction.followup.send(embed=embed, ephemeral=True) # type: ignore
             # await interaction.response.send_message(embed=embed, ephemeral=True) # type: ignore
+        print(f'Error: {error}')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context[ValorantBot], error: Exception) -> None:
