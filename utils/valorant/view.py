@@ -830,11 +830,11 @@ class BaseBundle(ui.View):
             item = GetItems.get_item_by_type(items['type'], items['uuid'])
             item_type = get_item_type(items['type'])
             emoji = GetEmoji.tier_by_bot(items['uuid'], self.bot) if item_type == 'Skins' else ''
-            try:
-                icon = item['icon'] if item_type != 'Player Cards' else item['icon']['large'] if item['icon']['large'] else item['icon']['small']
-            except KeyError:
-                print("keyerror")
+            if item_type == 'Player titles':
                 icon = None
+            else:
+                icon = item['icon'] if item_type != 'Player Cards' else item['icon']['large'] if item['icon']['large'] else item['icon']['small']
+            
             color = 0xFD4554 if item_type == 'Skins' else 0x0F1923
 
             item_price = items['price']
