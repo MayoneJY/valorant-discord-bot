@@ -114,7 +114,7 @@ class ErrorHandler(commands.Cog):
         else:
             traceback.print_exception(type(error), error, error.__traceback__)
             cm_error = 'An unknown error occurred, sorry'
-
+        print(f'Error: {error}')
         embed.description = cm_error
         await ctx.send(embed=embed, delete_after=30, ephemeral=True)
 
