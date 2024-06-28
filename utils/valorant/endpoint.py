@@ -291,7 +291,7 @@ class API_ENDPOINT:
         Store_GetStorefrontV2
         Get the currently available items in the store
         """
-        data = self.fetch(f'/store/v2/storefront/{self.puuid}', url='pd')
+        data = self.fetch(f'/store/v3/storefront/{self.puuid}', url='pd')
         return data
 
     def store_fetch_wallet(self) -> dict[str, Any]:
