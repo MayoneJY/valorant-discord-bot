@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import traceback
 from typing import TYPE_CHECKING
+from traceback import format_exception
 
 import discord
 from discord import Interaction
@@ -44,6 +45,7 @@ class ErrorHandler(commands.Cog):
     async def on_app_command_error(self, interaction: Interaction, error: AppCommandError) -> None:
         """Handles errors for all application commands."""
 
+        errortxt = str(format_exception(type(error), error, error.__traceback__)).replace("\\n", "\n")
         if self.bot.debug is True:
             traceback.print_exception(type(error), error, error.__traceback__)
 
@@ -86,11 +88,12 @@ class ErrorHandler(commands.Cog):
             # if interaction.response.is_done():
             return await interaction.followup.send(embed=embed, ephemeral=True) # type: ignore
             # await interaction.response.send_message(embed=embed, ephemeral=True) # type: ignore
-        print(f'Error: {error}')
+        print(f'Error: {errortxt}')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context[ValorantBot], error: Exception) -> None:
         embed = discord.Embed(color=0xFE676E)
+        errortxt = str(format_exception(type(error), error, error.__traceback__)).replace("\\n", "\n")
 
         if isinstance(error, CommandNotFound):
             return
@@ -115,7 +118,7 @@ class ErrorHandler(commands.Cog):
         else:
             traceback.print_exception(type(error), error, error.__traceback__)
             cm_error = 'An unknown error occurred, sorry'
-        print(f'Error: {error}')
+        print(f'Error: {errortxt}')
         embed.description = cm_error
         await ctx.send(embed=embed, delete_after=30, ephemeral=True)
 

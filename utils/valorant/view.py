@@ -748,23 +748,21 @@ class BaseBundle(ui.View):
             self.add_item(self.back_button)
             self.add_item(self.next_button)
 
-    def base_embed(self, title: str, description: str, icon: str, color: int = 0x0F1923) -> discord.Embed:
+    def base_embed(self, title: str, description: str, icon: str|None, color: int = 0x0F1923) -> discord.Embed:
         """Base embed for the view"""
 
         embed = discord.Embed(title=title, description=description, color=color)
-        embed.set_thumbnail(url=icon)
+        if icon:
+            embed.set_thumbnail(url=icon)
         return embed
 
     def build_embeds(self, selected_bundle: int = 1) -> None:
         """Builds the bundle embeds"""
-
         vp_emoji = discord.utils.get(self.bot.emojis, name='ValorantPointIcon')
-
         embeds_list = []
         embeds = []
 
         collection_title = self.response.get('TITLE')
-
         for index, bundle in enumerate(sorted(self.entries, key=lambda c: c['names'][self.language]), start=1):  # type: ignore
             if index == selected_bundle:
                 embeds.append(
@@ -774,15 +772,12 @@ class BaseBundle(ui.View):
                         color=0xFD4554,
                     ).set_image(url=bundle['icon'])  # type: ignore
                 )
-
                 for items in sorted(bundle['items'], key=lambda x: x['price'], reverse=True):  # type: ignore
                     item = GetItems.get_item_by_type(items['type'], items['uuid'])  # type: ignore
                     item_type = get_item_type(items['type'])  # type: ignore
-
                     emoji = GetEmoji.tier_by_bot(items['uuid'], self.bot) if item_type == 'Skins' else ''  # type: ignore
                     icon = item['icon'] if item_type != 'Player Cards' else item['icon']['large']
                     color = 0xFD4554 if item_type == 'Skins' else 0x0F1923
-
                     embed = self.base_embed(
                         f"{emoji} {item['names'][self.language]}",
                         f"{vp_emoji} {items['price']}",  # type: ignore
@@ -835,7 +830,11 @@ class BaseBundle(ui.View):
             item = GetItems.get_item_by_type(items['type'], items['uuid'])
             item_type = get_item_type(items['type'])
             emoji = GetEmoji.tier_by_bot(items['uuid'], self.bot) if item_type == 'Skins' else ''
-            icon = item['icon'] if item_type != 'Player Cards' else item['icon']['large']
+            try:
+                icon = item['icon'] if item_type != 'Player Cards' else item['icon']['large'] if item['icon']['large'] else item['icon']['small']
+            except KeyError:
+                print("keyerror")
+                icon = None
             color = 0xFD4554 if item_type == 'Skins' else 0x0F1923
 
             item_price = items['price']
@@ -898,7 +897,6 @@ class BaseBundle(ui.View):
 
     async def start(self) -> None:
         """Starts the bundle view"""
-
         if len(self.entries) == 1:
             self.build_embeds()
             self.fill_items()
