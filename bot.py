@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from utils import locale_v2
 from utils.valorant.cache import get_cache
 
+
 load_dotenv()
 
 initial_extensions = ['cogs.admin', 'cogs.errors', 'cogs.notify', 'cogs.valorant']
