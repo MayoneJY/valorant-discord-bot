@@ -119,6 +119,7 @@ class Auth:
         async with session.put(
             'https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers
         ) as r:
+            print(r)
             data = await r.json()
             for cookie in r.cookies.items():
                 cookies['cookie'][cookie[0]] = str(cookie).split('=')[1].split(';')[0]
