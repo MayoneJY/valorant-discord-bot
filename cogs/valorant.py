@@ -129,8 +129,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
         user_id = interaction.user.id
         auth = self.db.auth
         auth.locale_code = interaction.locale  # type: ignore
-
-        captcha = await auth.hcaptcha()
+        session = auth.setup_session()
+        captcha = await auth.hcaptcha(session)
 
         try:
             host = os.getenv('DB_HOST')
@@ -157,8 +157,8 @@ class ValorantCog(commands.Cog, name='Valorant'):
             conn.close()
             if not interaction.response.is_done():
                 await interaction.response.defer(ephemeral=True)
-
-            await interaction.followup.send(content=f"[여기를 클릭하여 인증을 완료하세요](https://mayonedev.com/valorant/index.html?token={random_string})", ephemeral=True)
+            embed = Embed(description=f"[여기를 클릭하여 인증을 완료하세요](https://mayonedev.com/valorant/index.html?token={random_string})", color=0x00ff00)
+            captcha_msg = await interaction.followup.send(embed=embed, ephemeral=True)
 
             while True:
                 conn = pymysql.connect(host=host, user=user, password=passw, db=db, charset='utf8')
@@ -189,9 +189,10 @@ class ValorantCog(commands.Cog, name='Valorant'):
         if token == '':
             raise ValorantBotError("시간 초과")
 
+        await captcha_msg.delete() # type: ignore
 
 
-        authenticate = await auth.authenticate(username, password, token)
+        authenticate = await auth.authenticate(session, username, password, token)
 
         if authenticate['auth'] == 'response':  # type: ignore
             if not interaction.response.is_done():

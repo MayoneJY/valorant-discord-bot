@@ -119,6 +119,7 @@ class LoginView(ui.View):
                 await interaction.response.send_modal(LoginModal(self.msg, self.valorantCog, "no_login", self.command_name))
         except Exception as e:
             print(f"LoginView.login:{e}")
+        await self.msg.delete() # type: ignore
 
 
 class CustomPartySpactorButtons(ui.View):

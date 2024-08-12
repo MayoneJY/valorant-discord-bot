@@ -142,7 +142,7 @@ class ClientSession(aiohttp.ClientSession):
 
 
 class Auth:
-    RIOT_CLIENT_USER_AGENT = 'RiotClient/60.0.6.4770705.4749685 rso-auth (Windows;10;;Professional, x64)'
+    RIOT_CLIENT_USER_AGENT = 'RiotClient/1.0.2.1870.3774 rso-auth (Windows;10;;Professional, x64)'
 
     def __init__(self) -> None:
         self._headers: dict = {
@@ -150,19 +150,42 @@ class Auth:
             'User-Agent': Auth.RIOT_CLIENT_USER_AGENT,
             'Accept': 'application/json, text/plain, */*',
             "Accept-Encoding": "deflate, gzip, zstd",
+            "Cache-Control": "no-cache",
         }
         self.user_agent = Auth.RIOT_CLIENT_USER_AGENT
 
         self.locale_code = 'en-US'  # default language
         self.response = {}  # prepare response for local response
 
+    def setup_session(self):
+        return ClientSession()
+    
+    async def setup_auth(self, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
+        data = {
+                'client_id': 'riot-client',
+                'nonce': '1',
+                'redirect_uri': 'http://localhost/redirect',
+                'response_type': 'token id_token',
+                'scope': 'account openid',
+            }
+        return await session.post('https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers)
+
     def local_response(self) -> dict[str, Any]:
         """This function is used to check if the local response is enabled."""
         self.response = LocalErrorResponse('AUTH', self.locale_code)
         return self.response
 
-    async def hcaptcha(self) -> list[str]: # type: ignore
-        session = ClientSession()
+    async def hcaptcha(self, session) -> list[str]: # type: ignore
+        # session = ClientSession()
+        # data = {
+        #     'client_id': 'riot-client',
+        #     'nonce': '1',
+        #     'redirect_uri': 'https://playvalorant.com/opt_in',
+        #     'response_type': 'token id_token',
+        #     'scope': 'account openid',
+        # }
+        # await session.post('https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers)
+
         sdk = requests.get("https://valorant-api.com/v1/version").json()["data"]["riotClientVersion"]
         data = {
             "clientId": "riot-client",
@@ -179,32 +202,25 @@ class Auth:
         r = await session.post("https://authenticate.riotgames.com/api/v1/login", json=data, 
         headers=self._headers)
         data = await r.json()
-
-        await session.close()
+        # print(data)
+        # await session.close()
         return [data["captcha"]["hcaptcha"]["key"], data["captcha"]["hcaptcha"]["data"]]
 
-    async def authenticate(self, username: str, password: str, token: str) -> dict[str, Any] | None:
+    async def authenticate(self, session: aiohttp.ClientSession, username: str, password: str, token: str) -> dict[str, Any] | None:
         """This function is used to authenticate the user."""
 
         # language
         local_response = self.local_response()
 
-        session = ClientSession()
+        # session = ClientSession()
 
-        data = {
-            'client_id': 'riot-client',
-            'nonce': '1',
-            'redirect_uri': 'https://playvalorant.com/opt_in',
-            'response_type': 'token id_token',
-            'scope': 'account openid',
-        }
 
         # headers = {'Content-Type': 'application/json', 'User-Agent': self.user_agent}
 
         try:
-            r = await session.post('https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers)
+            r = await self.setup_auth(session)
             # prepare cookies for auth request
-            
+            # await session.close()
             cookies = {'cookie': {}}
             for cookie in r.cookies.items():
                 cookies['cookie'][cookie[0]] = str(cookie).split('=')[1].split(';')[0]
@@ -221,46 +237,70 @@ class Auth:
                         'password': password
                     }
                 }
+            
+            # cookies = {'cookie': {}}
             async with session.put(
                 'https://authenticate.riotgames.com/api/v1/login', json=data, headers=self._headers
             ) as r:
-                # print(r)
                 data = await r.json()
+                if 'error' in data and data['error']:
+                    raise AuthenticationError(data['error'])
                 for cookie in r.cookies.items():
                     cookies['cookie'][cookie[0]] = str(cookie).split('=')[1].split(';')[0]
 
             # print('Response Status:', r.status)
-        finally:
-            await session.close()
+            # print(data['type'])
+            if data['type'] == 'success':
+                # expiry_token = datetime.now() + timedelta(hours=1)
 
-        if data['type'] == 'response':
-            expiry_token = datetime.now() + timedelta(hours=1)
+                # response = _extract_tokens(data)
+                # access_token = response[0]
+                # token_id = response[1]
+                # print(access_token, token_id)
+                # expiry_token = datetime.now() + timedelta(minutes=59)
+                # cookies['expiry_token'] = int(datetime.timestamp(expiry_token))  # type: ignore
 
-            response = _extract_tokens(data)
-            access_token = response[0]
-            token_id = response[1]
+                # return {'auth': 'response', 'data': {'cookie': cookies, 'access_token': access_token, 'token_id': token_id}}
+                login_token = data['success']['login_token']
 
-            expiry_token = datetime.now() + timedelta(minutes=59)
-            cookies['expiry_token'] = int(datetime.timestamp(expiry_token))  # type: ignore
+                data = {
+                    "authentication_type": "RiotAuth",
+                    "code_verifier": "",
+                    "login_token": login_token,
+                    "persist_login": True
+                }
+                await session.post("https://auth.riotgames.com/api/v1/login-token", json=data, headers=self._headers)
 
-            return {'auth': 'response', 'data': {'cookie': cookies, 'access_token': access_token, 'token_id': token_id}}
+                r = await self.setup_auth(session)
+                data = await r.json()
+                # print(data)
+                response = _extract_tokens(data)
+                access_token = response[0]
+                token_id = response[1]
+                # print(access_token, token_id)
+                expiry_token = datetime.now() + timedelta(minutes=59)
+                cookies['expiry_token'] = int(datetime.timestamp(expiry_token))  # type: ignore
 
-        elif data['type'] == 'multifactor':
-            if r.status == 429:
-                raise AuthenticationError(local_response.get('RATELIMIT', 'Please wait a few minutes and try again.'))
+                return {'auth': 'response', 'data': {'cookie': cookies, 'access_token': access_token, 'token_id': token_id}}
 
-            label_modal = local_response.get('INPUT_2FA_CODE')
-            WaitFor2FA = {'auth': '2fa', 'cookie': cookies, 'label': label_modal}
+            elif data['type'] == 'multifactor':
+                if r.status == 429:
+                    raise AuthenticationError(local_response.get('RATELIMIT', 'Please wait a few minutes and try again.'))
 
-            if data['multifactor']['method'] == 'email':
-                WaitFor2FA['message'] = (
-                    f"{local_response.get('2FA_TO_EMAIL', 'Riot sent a code to')} {data['multifactor']['email']}"
-                )
+                label_modal = local_response.get('INPUT_2FA_CODE')
+                WaitFor2FA = {'auth': '2fa', 'cookie': cookies, 'label': label_modal}
+
+                if data['multifactor']['method'] == 'email':
+                    WaitFor2FA['message'] = (
+                        f"{local_response.get('2FA_TO_EMAIL', 'Riot sent a code to')} {data['multifactor']['email']}"
+                    )
+                    return WaitFor2FA
+
+                WaitFor2FA['message'] = local_response.get('2FA_ENABLE', 'You have 2FA enabled!')
                 return WaitFor2FA
 
-            WaitFor2FA['message'] = local_response.get('2FA_ENABLE', 'You have 2FA enabled!')
-            return WaitFor2FA
-
+        finally:
+            await session.close()
         raise AuthenticationError(local_response.get('INVALID_PASSWORD', 'Your username or password may be incorrect!'))
     
 
