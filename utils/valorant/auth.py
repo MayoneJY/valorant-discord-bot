@@ -192,7 +192,7 @@ class Auth:
         session = ClientSession()
 
         data = {
-            'client_id': 'play-valorant-web-prod',
+            'client_id': 'riot-client',
             'nonce': '1',
             'redirect_uri': 'https://playvalorant.com/opt_in',
             'response_type': 'token id_token',
