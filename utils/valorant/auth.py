@@ -222,7 +222,7 @@ class Auth:
                     }
                 }
             async with session.put(
-                'https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers
+                'https://authenticate.riotgames.com/api/v1/login', json=data, headers=self._headers
             ) as r:
                 # print(r)
                 data = await r.json()
