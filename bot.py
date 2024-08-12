@@ -29,11 +29,11 @@ BOT_PREFIX = '-'
 # todo claer white space
 
 if len(sys.argv) != 3:
-    print("Usage: python bot.py <DISCORD_VALORANT_BOT_TOKEN> <OWNER_ID>")
-    sys.exit(1)
-
-DISCORD_VALORANT_BOT_TOKEN = sys.argv[1]
-OWNER_ID = sys.argv[2]
+    DISCORD_VALORANT_BOT_TOKEN = os.getenv('TOKEN')
+    OWNER_ID = os.getenv('OWNER_ID')
+else:
+    DISCORD_VALORANT_BOT_TOKEN = sys.argv[1]
+    OWNER_ID = sys.argv[2]
 
 class ValorantBot(commands.Bot):
     debug: bool

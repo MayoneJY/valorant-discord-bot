@@ -1,17 +1,24 @@
 # from __future__ import annotations
 
 # Standard
+from secrets import token_urlsafe
+import contextlib
+import ctypes
 import json
 import re
 import ssl
 from datetime import datetime, timedelta
-from typing import Any
+import sys
+from typing import Any, Optional
+import warnings
 
 # Third
 import aiohttp
+import requests
 
 from ..errors import AuthenticationError
 from ..locale_v2 import ValorantTranslator
+from ..errors import ValorantBotError
 
 # Local
 from .local import LocalErrorResponse, ResponseLanguage
@@ -41,33 +48,97 @@ def _extract_tokens_from_uri(url: str) -> tuple[str, str]:
 
 # https://developers.cloudflare.com/ssl/ssl-tls/cipher-suites/
 
-FORCED_CIPHERS = [
-    'ECDHE-ECDSA-AES256-GCM-SHA384',
-    'ECDHE-ECDSA-AES128-GCM-SHA256',
-    'ECDHE-ECDSA-CHACHA20-POLY1305',
-    'ECDHE-RSA-AES128-GCM-SHA256',
-    'ECDHE-RSA-CHACHA20-POLY1305',
-    'ECDHE-RSA-AES128-SHA256',
-    'ECDHE-RSA-AES128-SHA',
-    'ECDHE-RSA-AES256-SHA',
-    'ECDHE-ECDSA-AES128-SHA256',
-    'ECDHE-ECDSA-AES128-SHA',
-    'ECDHE-ECDSA-AES256-SHA',
-    'ECDHE+AES128',
-    'ECDHE+AES256',
-    'ECDHE+3DES',
-    'RSA+AES128',
-    'RSA+AES256',
-    'RSA+3DES',
-]
-
+CIPHERS13 = ":".join(  # https://docs.python.org/3/library/ssl.html#tls-1-3
+        (
+            "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_AES_128_GCM_SHA256",
+            "TLS_AES_256_GCM_SHA384",
+        )
+    )
+CIPHERS = ":".join(
+    (
+        "ECDHE-ECDSA-CHACHA20-POLY1305",
+        "ECDHE-RSA-CHACHA20-POLY1305",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-ECDSA-AES128-SHA",
+        "ECDHE-RSA-AES128-SHA",
+        "ECDHE-ECDSA-AES256-SHA",
+        "ECDHE-RSA-AES256-SHA",
+        "AES128-GCM-SHA256",
+        "AES256-GCM-SHA384",
+        "AES128-SHA",
+        "AES256-SHA",
+        "DES-CBC3-SHA",  # most likely not available
+    )
+)
+SIGALGS = ":".join(
+    (
+        "ecdsa_secp256r1_sha256",
+        "rsa_pss_rsae_sha256",
+        "rsa_pkcs1_sha256",
+        "ecdsa_secp384r1_sha384",
+        "rsa_pss_rsae_sha384",
+        "rsa_pkcs1_sha384",
+        "rsa_pss_rsae_sha512",
+        "rsa_pkcs1_sha512",
+        "rsa_pkcs1_sha1",  # will get ignored and won't be negotiated
+    )
+)
 
 class ClientSession(aiohttp.ClientSession):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        ctx.minimum_version = ssl.TLSVersion.TLSv1_3
-        ctx.set_ciphers(':'.join(FORCED_CIPHERS))
-        super().__init__(*args, **kwargs, cookie_jar=aiohttp.CookieJar(), connector=aiohttp.TCPConnector(ssl=ctx))
+        # ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        # ctx.minimum_version = ssl.TLSVersion.TLSv1_3
+        # ctx.set_ciphers(':'.join(FORCED_CIPHERS))
+        # ctx.set_alpn_protocols(CIPH)
+        # super().__init__(*args, **kwargs, cookie_jar=aiohttp.CookieJar(), connector=aiohttp.TCPConnector(ssl=ctx))
+        ssl_ctx = ssl.create_default_context()
+
+        # https://github.com/python/cpython/issues/88068
+        addr = id(ssl_ctx) + sys.getsizeof(object())
+        ssl_ctx_addr = ctypes.cast(addr, ctypes.POINTER(ctypes.c_void_p)).contents
+
+        libssl: Optional[ctypes.CDLL] = None
+        if sys.platform.startswith("win32"):
+            for dll_name in (
+                "libssl-3.dll",
+                "libssl-3-x64.dll",
+                "libssl-1_1.dll",
+                "libssl-1_1-x64.dll",
+            ):
+                with contextlib.suppress(FileNotFoundError, OSError):
+                    libssl = ctypes.CDLL(dll_name)
+                    break
+        elif sys.platform.startswith(("linux", "darwin")):
+            libssl = ctypes.CDLL(ssl._ssl.__file__)  # type: ignore
+
+        if libssl is None:
+            raise NotImplementedError(
+                "Failed to load libssl. Your platform or distribution might be unsupported, please open an issue."
+            )
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            ssl_ctx.minimum_version = ssl.TLSVersion.TLSv1  # deprecated since 3.10
+        ssl_ctx.set_alpn_protocols(["http/1.1"])
+        ssl_ctx.options |= 1 << 19  # SSL_OP_NO_ENCRYPT_THEN_MAC
+        ssl_ctx.options |= 1 << 14  # SSL_OP_NO_TICKET
+        libssl.SSL_CTX_set_ciphersuites(ssl_ctx_addr, CIPHERS13.encode())
+        libssl.SSL_CTX_set_cipher_list(ssl_ctx_addr, CIPHERS.encode())
+        # setting SSL_CTRL_SET_SIGALGS_LIST
+        libssl.SSL_CTX_ctrl(ssl_ctx_addr, 98, 0, SIGALGS.encode())
+        # setting SSL_CTRL_SET_GROUPS_LIST
+        libssl.SSL_CTX_ctrl(ssl_ctx_addr, 92, 0, ":".join(
+            (
+                "x25519",
+                "secp256r1",
+                "secp384r1",
+            )
+        ).encode())
+        super().__init__(*args, **kwargs, cookie_jar=aiohttp.CookieJar(), connector=aiohttp.TCPConnector(ssl=ssl_ctx), raise_for_status=True)
 
 
 class Auth:
@@ -78,6 +149,7 @@ class Auth:
             'Content-Type': 'application/json',
             'User-Agent': Auth.RIOT_CLIENT_USER_AGENT,
             'Accept': 'application/json, text/plain, */*',
+            "Accept-Encoding": "deflate, gzip, zstd",
         }
         self.user_agent = Auth.RIOT_CLIENT_USER_AGENT
 
@@ -89,7 +161,29 @@ class Auth:
         self.response = LocalErrorResponse('AUTH', self.locale_code)
         return self.response
 
-    async def authenticate(self, username: str, password: str) -> dict[str, Any] | None:
+    async def hcaptcha(self) -> list[str]: # type: ignore
+        session = ClientSession()
+        sdk = requests.get("https://valorant-api.com/v1/version").json()["data"]["riotClientVersion"]
+        data = {
+            "clientId": "riot-client",
+            "language": "",
+            "platform": "windows",
+            "remember": True,
+            "riot_identity": {
+                "language": "ko_KR",
+                "state": "auth",
+            },
+            "sdkVersion": sdk,
+            "type": "auth",
+        }
+        r = await session.post("https://authenticate.riotgames.com/api/v1/login", json=data, 
+        headers=self._headers)
+        data = await r.json()
+
+        await session.close()
+        return [data["captcha"]["hcaptcha"]["key"], data["captcha"]["hcaptcha"]["data"]]
+
+    async def authenticate(self, username: str, password: str, token: str) -> dict[str, Any] | None:
         """This function is used to authenticate the user."""
 
         # language
@@ -107,25 +201,37 @@ class Auth:
 
         # headers = {'Content-Type': 'application/json', 'User-Agent': self.user_agent}
 
-        r = await session.post('https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers)
-
-        # prepare cookies for auth request
-        cookies = {'cookie': {}}
-        for cookie in r.cookies.items():
-            cookies['cookie'][cookie[0]] = str(cookie).split('=')[1].split(';')[0]
-
-        data = {'type': 'auth', 'username': username, 'password': password, 'remember': True}
-
-        async with session.put(
-            'https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers
-        ) as r:
-            print(r)
-            data = await r.json()
+        try:
+            r = await session.post('https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers)
+            # prepare cookies for auth request
+            
+            cookies = {'cookie': {}}
             for cookie in r.cookies.items():
                 cookies['cookie'][cookie[0]] = str(cookie).split('=')[1].split(';')[0]
 
-        # print('Response Status:', r.status)
-        await session.close()
+            
+            data = {
+                'type': 'auth',
+                'riot_identity': 
+                    {
+                        'captcha': f'hcaptcha {token}', 
+                        'language': 'ko_KR',
+                        'remember': True, 
+                        'username': username, 
+                        'password': password
+                    }
+                }
+            async with session.put(
+                'https://auth.riotgames.com/api/v1/authorization', json=data, headers=self._headers
+            ) as r:
+                # print(r)
+                data = await r.json()
+                for cookie in r.cookies.items():
+                    cookies['cookie'][cookie[0]] = str(cookie).split('=')[1].split(';')[0]
+
+            # print('Response Status:', r.status)
+        finally:
+            await session.close()
 
         if data['type'] == 'response':
             expiry_token = datetime.now() + timedelta(hours=1)

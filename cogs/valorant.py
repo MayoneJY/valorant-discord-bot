@@ -20,6 +20,11 @@ from utils.valorant.resources import setup_emoji
 from utils.valorant.party import CustomParty
 from utils.valorant.view import LoginView, TwoFA_Button_UI
 import json, random
+import pymysql
+from dotenv import load_dotenv
+import os
+import string
+import asyncio
 
 VLR_locale = ValorantTranslator()
 
@@ -124,10 +129,72 @@ class ValorantCog(commands.Cog, name='Valorant'):
         user_id = interaction.user.id
         auth = self.db.auth
         auth.locale_code = interaction.locale  # type: ignore
-        authenticate = await auth.authenticate(username, password)
+
+        captcha = await auth.hcaptcha()
+
+        try:
+            host = os.getenv('DB_HOST')
+            user = os.getenv('DB_USER')
+            passw = os.getenv('DB_PASS')
+            db = os.getenv('DB_NAME')
+            if host is None or user is None or passw is None or db is None:
+                raise Exception("DB Connection Error")
+            conn = pymysql.connect(host=host, user=user, password=passw, db=db, charset='utf8')
+            cursor = conn.cursor()
+            def generate_random_string(length: int) -> str:
+                letters = string.ascii_letters
+                return ''.join(random.choice(letters) for _ in range(length))
+
+            random_string = generate_random_string(20)
+            check = cursor.execute("SELECT * FROM captcha WHERE customToken = %s", (random_string))
+            while check:
+                random_string = generate_random_string(20)
+                check = cursor.execute("SELECT * FROM captcha WHERE customToken = %s", (random_string))
+            cursor.execute("INSERT INTO captcha VALUES (%s, %s, %s, %s)", (random_string, '', captcha[0], captcha[1]))
+            conn.commit()
+            count = 0
+            token = ''
+            conn.close()
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+
+            await interaction.followup.send(content=f"[여기를 클릭하여 인증을 완료하세요](https://mayonedev.com/valorant/index.html?token={random_string})", ephemeral=True)
+
+            while True:
+                conn = pymysql.connect(host=host, user=user, password=passw, db=db, charset='utf8')
+                cursor = conn.cursor()
+                cursor.execute("SELECT SQL_NO_CACHE token FROM captcha WHERE customToken = %s", (random_string))
+                result = cursor.fetchone()
+                if result[0] != '': # type: ignore
+                    token = result[0] # type: ignore
+                    cursor.execute("DELETE FROM captcha WHERE customToken = %s", (random_string))
+                    conn.close()
+                    break
+                # 5초마다 확인
+                await asyncio.sleep(5)
+                count += 1
+                # 3분이 지나면 종료
+                if count >= 36:
+                    cursor.execute("DELETE FROM captcha WHERE customToken = %s", (random_string))
+                    conn.commit()
+                    raise ValorantBotError("시간 초과")
+                conn.close()
+        except Exception as e:
+            print(e)
+            raise ValorantBotError("DB Connection Error")
+            return
+        
+        
+        if token == '':
+            raise ValorantBotError("시간 초과")
+
+
+
+        authenticate = await auth.authenticate(username, password, token)
 
         if authenticate['auth'] == 'response':  # type: ignore
-            await interaction.response.defer(ephemeral=True)
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
             login = await self.db.login(user_id, authenticate, interaction.locale)  # type: ignore
 
             if login['auth']:  # type: ignore
