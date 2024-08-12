@@ -168,6 +168,7 @@ class ValorantCog(commands.Cog, name='Valorant'):
                 if result[0] != '': # type: ignore
                     token = result[0] # type: ignore
                     cursor.execute("DELETE FROM captcha WHERE customToken = %s", (random_string))
+                    conn.commit()
                     conn.close()
                     break
                 # 5초마다 확인
