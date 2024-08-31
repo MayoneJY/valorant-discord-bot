@@ -228,11 +228,11 @@ class Auth:
             
             data = {
                 'type': 'auth',
+                'language': 'ko_KR',
+                'remember': True, 
                 'riot_identity': 
                     {
                         'captcha': f'hcaptcha {token}', 
-                        'language': 'ko_KR',
-                        'remember': True, 
                         'username': username, 
                         'password': password
                     }
