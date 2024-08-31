@@ -230,13 +230,22 @@ class Auth:
                 'type': 'auth',
                 'language': 'ko_KR',
                 'remember': True, 
-                'riot_identity': 
-                    {
-                        'captcha': f'hcaptcha {token}', 
-                        'username': username, 
-                        'password': password
-                    }
+                'captcha': f'hcaptcha {token}', 
+                'username': username, 
+                'password': password
+                
                 }
+            # data = {
+            #     'type': 'auth',
+            #     'language': 'ko_KR',
+            #     'remember': True, 
+            #     'riot_identity': 
+            #         {
+            #             'captcha': f'hcaptcha {token}', 
+            #             'username': username, 
+            #             'password': password
+            #         }
+            #     }
             
             # cookies = {'cookie': {}}
             async with session.put(
